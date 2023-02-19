@@ -46,6 +46,7 @@ fn invoke_value(function_name: Atom, class_hash: Atom) -> Option<Box<Expr>> {
     Option::Some(Box::new(Expr::Call(CallExpr {
         span: DUMMY_SP,
         callee: invoke_calle(),
+        // replace with this.hash
         args: vec![invoke_arg(function_name), invoke_arg(class_hash)],
         type_args: None,
     })))
@@ -59,7 +60,7 @@ fn invoke_prop(key: PropName) -> ClassMember {
         key,
         value: invoke_value(function_name.into(), class_hash.into()),
         type_ann: None,
-        is_static: false,
+        is_static: true,
         decorators: vec![],
         accessibility: None,
         is_abstract: false,
@@ -100,7 +101,7 @@ test!(
     |_| tr(),
     inject_nullstack,
     r#"class Component { static async server() { console.log("server") } };"#,
-    r#"class Component { server = Nullstack._invoke('server', 'HASH') };"#
+    r#"class Component { static server = Nullstack._invoke('server', 'HASH') };"#
 );
 
 test!(
