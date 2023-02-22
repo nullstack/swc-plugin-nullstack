@@ -9,7 +9,8 @@
     ],
     "main": "target/wasm32-wasi/release/nullstack.wasm",
     "scripts": {
-        "build": "cargo build-wasi --release"
+        "build": "cargo build-wasi --release",
+        "test": "cargo test"
     },
     "files": [],
     "preferUnplugged": true

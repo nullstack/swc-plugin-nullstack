@@ -661,6 +661,7 @@ name = "nullstack"
 version = "0.1.0"
 dependencies = [
  "md5",
+ "serde",
  "serde_json",
  "swc_common",
  "swc_core",

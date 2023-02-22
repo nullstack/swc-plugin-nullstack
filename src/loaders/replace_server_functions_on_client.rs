@@ -1,7 +1,7 @@
 use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
-    atoms::{Atom, JsWord},
+    atoms::JsWord,
     transforms::testing::test,
     visit::{as_folder, noop_visit_mut_type, Fold, VisitMut},
 };
@@ -15,14 +15,59 @@ impl Default for ReplaceServerFunctionVisitor {
     }
 }
 
-fn invoke_arg(value: Atom) -> ExprOrSpread {
-    ExprOrSpread {
-        spread: None,
-        expr: Box::new(Expr::Lit(Lit::Str(Str {
+impl ReplaceServerFunctionVisitor {
+    fn invoke_arg_hash(&self) -> ExprOrSpread {
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Member(MemberExpr {
+                span: DUMMY_SP,
+                obj: Box::new(Expr::This(ThisExpr { span: DUMMY_SP })),
+                prop: MemberProp::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: "hash".into(),
+                    optional: false,
+                }),
+            })),
+        }
+    }
+
+    fn invoke_arg_function_name(&self, key: PropName) -> ExprOrSpread {
+        let function_name = key.clone().ident().unwrap().sym;
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: JsWord::from(&*function_name),
+                raw: Some(format!("'{}'", function_name).into()),
+            }))),
+        }
+    }
+
+    fn invoke_value(&self, key: PropName) -> Option<Box<Expr>> {
+        Option::Some(Box::new(Expr::Call(CallExpr {
             span: DUMMY_SP,
-            value: JsWord::from(&*value),
-            raw: Some(format!("'{}'", value).into()),
-        }))),
+            callee: invoke_calle(),
+            args: vec![self.invoke_arg_function_name(key), self.invoke_arg_hash()],
+            type_args: None,
+        })))
+    }
+
+    fn invoke_prop(&self, key: PropName) -> ClassMember {
+        ClassMember::ClassProp(ClassProp {
+            span: DUMMY_SP,
+            key: key.clone(),
+            value: self.invoke_value(key),
+            type_ann: None,
+            is_static: true,
+            decorators: vec![],
+            accessibility: None,
+            is_abstract: false,
+            is_optional: false,
+            is_override: false,
+            readonly: false,
+            declare: false,
+            definite: false,
+        })
     }
 }
 
@@ -42,45 +87,16 @@ fn invoke_calle() -> Callee {
     })))
 }
 
-fn invoke_value(function_name: Atom, class_hash: Atom) -> Option<Box<Expr>> {
-    Option::Some(Box::new(Expr::Call(CallExpr {
-        span: DUMMY_SP,
-        callee: invoke_calle(),
-        // replace with this.hash
-        args: vec![invoke_arg(function_name), invoke_arg(class_hash)],
-        type_args: None,
-    })))
-}
-
-fn invoke_prop(key: PropName) -> ClassMember {
-    let function_name = key.clone().ident().unwrap().sym;
-    let class_hash = "HASH";
-    ClassMember::ClassProp(ClassProp {
-        span: DUMMY_SP,
-        key,
-        value: invoke_value(function_name.into(), class_hash.into()),
-        type_ann: None,
-        is_static: true,
-        decorators: vec![],
-        accessibility: None,
-        is_abstract: false,
-        is_optional: false,
-        is_override: false,
-        readonly: false,
-        declare: false,
-        definite: false,
-    })
-}
-
 impl VisitMut for ReplaceServerFunctionVisitor {
     noop_visit_mut_type!();
 
     fn visit_mut_class_member(&mut self, n: &mut ClassMember) {
         if let ClassMember::Method(m) = n {
             if m.is_static && m.function.is_async && m.key.clone().ident().is_some() {
-                *n = invoke_prop(m.key.clone());
+                *n = self.invoke_prop(m.key.clone());
             }
         }
+        //newSource += `\nif (module.hot) { module.hot.accept(); Nullstack.updateInstancesPrototypes(${klassName}, ${klassName}.hash) }`
     }
 }
 
@@ -97,15 +113,15 @@ fn syntax() -> Syntax {
 }
 
 test!(
-    Default::default(),
+    syntax(),
     |_| tr(),
     inject_nullstack,
     r#"class Component { static async server() { console.log("server") } };"#,
-    r#"class Component { static server = Nullstack._invoke('server', 'HASH') };"#
+    r#"class Component { static server = Nullstack._invoke('server', this.hash) };"#
 );
 
 test!(
-    Default::default(),
+    syntax(),
     |_| tr(),
     skip_inject_nullstack_when_not_async,
     r#"class Component { static server() { console.log("isomorphic") } };"#,
@@ -113,7 +129,7 @@ test!(
 );
 
 test!(
-    Default::default(),
+    syntax(),
     |_| tr(),
     skip_inject_nullstack_when_not_static,
     r#"class Component { async server() { console.log("client") } };"#,

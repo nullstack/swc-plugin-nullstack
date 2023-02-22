@@ -21,6 +21,7 @@ impl InjectHashVisitor {
             let separator = "__";
             self.file_path
                 .replace("/", separator)
+                .replace("\\", separator)
                 .replace(".", separator)
         } else {
             let digest = md5::compute(self.file_path.clone());
