@@ -1,7 +1,6 @@
 use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
-    transforms::testing::test,
     visit::{as_folder, noop_visit_mut_type, Fold, VisitMut},
 };
 use swc_ecma_parser::{EsConfig, Syntax};
@@ -69,27 +68,3 @@ fn syntax() -> Syntax {
     config.jsx = true;
     Syntax::Es(config)
 }
-
-test!(
-    syntax(),
-    |_| tr(),
-    inject_source_to_node,
-    r#"function Modal() { return <button onclick={close}> x </button> }"#,
-    r#"function Modal() { return <button onclick={close} source={this}> x </button> }"#
-);
-
-test!(
-    syntax(),
-    |_| tr(),
-    skip_inject_duplicated_source_to_node,
-    r#"function Modal() { return <button source={this} onclick={close}> x </button> }"#,
-    r#"function Modal() { return <button source={this} onclick={close}> x </button> }"#
-);
-
-test!(
-    syntax(),
-    |_| tr(),
-    skip_inject_source_to_node,
-    r#"function Modal() { return <button class="kawaii-desu"> x </button> }"#,
-    r#"function Modal() { return <button class="kawaii-desu"> x </button> }"#
-);

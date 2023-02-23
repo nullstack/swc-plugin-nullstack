@@ -2,10 +2,8 @@ use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
     atoms::JsWord,
-    transforms::testing::test,
-    visit::{as_folder, noop_visit_mut_type, Fold, VisitMut},
+    visit::{noop_visit_mut_type, VisitMut},
 };
-use swc_ecma_parser::{EsConfig, Syntax};
 
 pub struct ReplaceServerFunctionVisitor {}
 
@@ -103,39 +101,3 @@ impl VisitMut for ReplaceServerFunctionVisitor {
         }
     }
 }
-
-#[allow(dead_code)]
-fn tr() -> impl Fold {
-    as_folder(ReplaceServerFunctionVisitor::default())
-}
-
-#[allow(dead_code)]
-fn syntax() -> Syntax {
-    let mut config = EsConfig::default();
-    config.jsx = true;
-    Syntax::Es(config)
-}
-
-test!(
-    syntax(),
-    |_| tr(),
-    inject_nullstack,
-    r#"class Component { static async server() { console.log("server") } };"#,
-    r#"class Component { static server = $transpiler.invoke('server', this.hash) };"#
-);
-
-test!(
-    syntax(),
-    |_| tr(),
-    skip_inject_nullstack_when_not_async,
-    r#"class Component { static server() { console.log("isomorphic") } };"#,
-    r#"class Component { static server() { console.log("isomorphic") } };"#
-);
-
-test!(
-    syntax(),
-    |_| tr(),
-    skip_inject_nullstack_when_not_static,
-    r#"class Component { async server() { console.log("client") } };"#,
-    r#"class Component { async server() { console.log("client") } };"#
-);

@@ -2,10 +2,8 @@ use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
     atoms::JsWord,
-    transforms::testing::test,
-    visit::{as_folder, noop_visit_mut_type, Fold, VisitMut, VisitMutWith},
+    visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
-use swc_ecma_parser::{EsConfig, Syntax};
 
 pub struct RegisterServerFunctionVisitor {
     registry: Vec<ModuleItem>,
@@ -163,65 +161,3 @@ impl VisitMut for RegisterServerFunctionVisitor {
         }
     }
 }
-
-#[allow(dead_code)]
-fn tr() -> impl Fold {
-    as_folder(RegisterServerFunctionVisitor::default())
-}
-
-#[allow(dead_code)]
-fn syntax() -> Syntax {
-    let mut config = EsConfig::default();
-    config.jsx = true;
-    Syntax::Es(config)
-}
-
-test!(
-    Default::default(),
-    |_| tr(),
-    register_server_functions,
-    r#"class Component { static async server() { console.log("server") } };"#,
-    r#"
-        class Component { static async server() { console.log("server") } };
-        $transpiler.registry[`${Component.hash}.server`] = Component.server;
-        $transpiler.registry[Component.hash] = Component;
-        Component.bindStaticFunctions(Component);
-    "#
-);
-
-test!(
-    Default::default(),
-    |_| tr(),
-    register_server_functions_with_multiple_classes,
-    r#"
-        class Component { static async server() { console.log("server") } };
-        class Component2 { static async server() { console.log("server") } };
-    "#,
-    r#"
-        class Component { static async server() { console.log("server") } };
-        class Component2 { static async server() { console.log("server") } };
-        $transpiler.registry[`${Component.hash}.server`] = Component.server;
-        $transpiler.registry[Component.hash] = Component;
-        Component.bindStaticFunctions(Component);
-        $transpiler.registry[`${Component2.hash}.server`] = Component2.server;
-        $transpiler.registry[Component2.hash] = Component2;
-        Component2.bindStaticFunctions(Component2);
-    "#
-);
-
-test!(
-    Default::default(),
-    |_| tr(),
-    skip_register_server_functions_with_multiple_classes,
-    r#"
-        class Component { static async server() { console.log("server") } };
-        class Component2 { };
-    "#,
-    r#"
-        class Component { static async server() { console.log("server") } };
-        class Component2 { };
-        $transpiler.registry[`${Component.hash}.server`] = Component.server;
-        $transpiler.registry[Component.hash] = Component;
-        Component.bindStaticFunctions(Component);
-    "#
-);

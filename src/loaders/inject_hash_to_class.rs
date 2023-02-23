@@ -1,10 +1,8 @@
 use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
-    transforms::testing::test,
-    visit::{as_folder, noop_visit_mut_type, Fold, VisitMut},
+    visit::{noop_visit_mut_type, VisitMut},
 };
-use swc_ecma_parser::{EsConfig, Syntax};
 
 pub struct InjectHashVisitor {
     file_path: String,
@@ -20,9 +18,9 @@ impl InjectHashVisitor {
         if self.is_dev {
             let separator = "__";
             self.file_path
-                .replace("/", separator)
-                .replace("\\", separator)
-                .replace(".", separator)
+                .replace('/', separator)
+                .replace('\\', separator)
+                .replace('.', separator)
         } else {
             let digest = md5::compute(self.file_path.clone());
             format!("{:x}", digest)
@@ -67,34 +65,3 @@ impl VisitMut for InjectHashVisitor {
         n.body.insert(0, self.hash_prop());
     }
 }
-
-#[allow(dead_code)]
-fn tr(is_dev: bool) -> impl Fold {
-    as_folder(InjectHashVisitor::new(
-        "/src/Application.njs".into(),
-        is_dev,
-    ))
-}
-
-#[allow(dead_code)]
-fn syntax() -> Syntax {
-    let mut config = EsConfig::default();
-    config.jsx = true;
-    Syntax::Es(config)
-}
-
-test!(
-    Default::default(),
-    |_| tr(true),
-    inject_dev_hash,
-    r#"class Component extends Nullstack { works = true };"#,
-    r#"class Component extends Nullstack { static hash = "__src__Application__njs"; works = true };"#
-);
-
-test!(
-    Default::default(),
-    |_| tr(false),
-    inject_prod_hash,
-    r#"class Component extends Nullstack { works = true };"#,
-    r#"class Component extends Nullstack { static hash = "e7eacfb84f0534dc757c0c4752385e2c"; works = true };"#
-);

@@ -5,6 +5,7 @@ use swc_core::{
 };
 
 mod loaders;
+
 use loaders::{
     inject_hash_to_class::InjectHashVisitor,
     inject_inner_components_to_class::InjectInnerComponentVisitor,
@@ -67,13 +68,5 @@ pub fn process_transform(
     program
 }
 
-// register-inner-components*
-// transform-node-ref
-// remove-import-from-client*
-
-// inject-hmr ?
-// string replace?
-// shutup loader?
-
-// remove unwraps
-// have less clones
+#[cfg(test)]
+mod tests;
