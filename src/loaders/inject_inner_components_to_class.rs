@@ -7,6 +7,7 @@ use swc_core::ecma::{
     visit::{as_folder, noop_visit_mut_type, Fold, VisitMut, VisitMutWith},
 };
 use swc_ecma_parser::{EsConfig, Syntax};
+use tracing::info;
 
 pub struct InjectInnerComponentVisitor {
     seeking_idents: bool,
@@ -74,6 +75,28 @@ impl VisitMut for InjectInnerComponentVisitor {
             if key.sym.starts_with("render") {
                 self.tags.clear();
                 self.local_idents.clear();
+                //
+                let params = n.function.params.clone();
+                if let Some(ctx) = params.first() {
+                    if let Pat::Object(pat) = ctx.pat.clone() {
+                        for prop in pat.props.into_iter() {
+                            match prop {
+                                ObjectPatProp::KeyValue(kv) => {
+                                    if let Some(v) = kv.value.ident() {
+                                        self.local_idents.push(v.id);
+                                    }
+                                }
+                                ObjectPatProp::Assign(a) => {
+                                    self.local_idents.push(a.key);
+                                }
+                                ObjectPatProp::Rest(_) => {}
+                            }
+                        }
+                        // pat.visit_mut_children_with(self);
+                        info!("{:#?}", ctx.clone());
+                    }
+                }
+                //
                 n.visit_mut_children_with(self);
                 if !self.tags.is_empty() {
                     for tag in self.tags.clone().into_iter() {
@@ -108,7 +131,9 @@ impl VisitMut for InjectInnerComponentVisitor {
     }
 
     fn visit_mut_var_declarator(&mut self, n: &mut VarDeclarator) {
-        self.local_idents.push(n.name.clone().ident().unwrap().id)
+        if let Some(ident) = n.name.clone().ident() {
+            self.local_idents.push(ident.id);
+        }
     }
 
     fn visit_mut_fn_decl(&mut self, n: &mut FnDecl) {
@@ -169,6 +194,46 @@ test!(
         class Component {
             render() {
                 const InnerComponent = this.renderInnerComponent;
+                return <InnerComponent />;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(),
+    skip_inject_destructured_renamed_args,
+    r#"
+        class Component {
+            render({ component: InnerComponent }) {
+                return <InnerComponent />;
+            }
+        }
+    "#,
+    r#"
+        class Component {
+            render({ component: InnerComponent }) {
+                return <InnerComponent />;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(),
+    skip_inject_destructured_args,
+    r#"
+        class Component {
+            render({ InnerComponent }) {
+                return <InnerComponent />;
+            }
+        }
+    "#,
+    r#"
+        class Component {
+            render({ InnerComponent }) {
                 return <InnerComponent />;
             }
         }

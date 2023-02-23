@@ -10,8 +10,11 @@ use loaders::{
     inject_inner_components_to_class::InjectInnerComponentVisitor,
     inject_source_to_events::InjectSourceVisitor,
     register_server_functions_on_server::RegisterServerFunctionVisitor,
+    remove_styles_on_server::RemoveStylesVisitor,
     replace_server_functions_on_client::ReplaceServerFunctionVisitor,
 };
+
+use crate::loaders::remove_unused_from_client::RemoveUnusedVisitor;
 
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -52,9 +55,13 @@ pub fn process_transform(
     program.visit_mut_with(&mut InjectSourceVisitor::default());
     program.visit_mut_with(&mut InjectHashVisitor::new(file_path, config.development));
     program.visit_mut_with(&mut InjectInnerComponentVisitor::default());
+    // config.client = true;
+
     if config.client {
         program.visit_mut_with(&mut ReplaceServerFunctionVisitor::default());
+        program.visit_mut_with(&mut RemoveUnusedVisitor::default());
     } else {
+        program.visit_mut_with(&mut RemoveStylesVisitor::default());
         program.visit_mut_with(&mut RegisterServerFunctionVisitor::default());
     }
     program

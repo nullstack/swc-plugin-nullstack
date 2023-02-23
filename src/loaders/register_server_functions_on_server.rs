@@ -56,7 +56,7 @@ fn register_class(n: &ClassDecl) -> ModuleItem {
                 span: DUMMY_SP,
                 obj: Box::new(Expr::Member(MemberExpr {
                     span: DUMMY_SP,
-                    obj: box_ident_expr(n.ident.sym.clone().into()),
+                    obj: box_ident_expr("$transpiler".into()),
                     prop: member_prop_ident("registry".into()),
                 })),
                 prop: MemberProp::Computed(ComputedPropName {
@@ -73,8 +73,8 @@ fn register_class(n: &ClassDecl) -> ModuleItem {
     }))
 }
 
-fn register_function(n: &ClassDecl, f: &ClassMethod) -> ModuleItem {
-    let invocation = format!(".{}", f.key.clone().ident().unwrap().sym);
+fn register_function(n: &ClassDecl, f: &Ident) -> ModuleItem {
+    let invocation = format!(".{}", &f.sym);
     ModuleItem::Stmt(Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
         expr: Box::new(Expr::Assign(AssignExpr {
@@ -84,7 +84,7 @@ fn register_function(n: &ClassDecl, f: &ClassMethod) -> ModuleItem {
                 span: DUMMY_SP,
                 obj: Box::new(Expr::Member(MemberExpr {
                     span: DUMMY_SP,
-                    obj: box_ident_expr(n.ident.sym.clone().into()),
+                    obj: box_ident_expr("$transpiler".into()),
                     prop: member_prop_ident("registry".into()),
                 })),
                 prop: MemberProp::Computed(ComputedPropName {
@@ -106,7 +106,7 @@ fn register_function(n: &ClassDecl, f: &ClassMethod) -> ModuleItem {
             right: Box::new(Expr::Member(MemberExpr {
                 span: DUMMY_SP,
                 obj: box_ident_expr(n.ident.sym.clone().into()),
-                prop: member_prop_ident(f.key.clone().ident().unwrap().sym),
+                prop: member_prop_ident(f.sym.clone()),
             })),
         })),
     }))
@@ -153,9 +153,12 @@ impl VisitMut for RegisterServerFunctionVisitor {
 
     fn visit_mut_class_member(&mut self, n: &mut ClassMember) {
         if let ClassMember::Method(m) = n {
-            if m.is_static && m.function.is_async && m.key.clone().ident().is_some() {
-                self.registry
-                    .push(register_function(&self.current_class.clone().unwrap(), &m));
+            if m.is_static && m.function.is_async {
+                if let Some(decl) = self.current_class.clone() {
+                    if let Some(ident) = m.key.clone().ident() {
+                        self.registry.push(register_function(&decl, &ident));
+                    }
+                }
             }
         }
     }
@@ -180,8 +183,8 @@ test!(
     r#"class Component { static async server() { console.log("server") } };"#,
     r#"
         class Component { static async server() { console.log("server") } };
-        Component.registry[`${Component.hash}.server`] = Component.server;
-        Component.registry[Component.hash] = Component;
+        $transpiler.registry[`${Component.hash}.server`] = Component.server;
+        $transpiler.registry[Component.hash] = Component;
         Component.bindStaticFunctions(Component);
     "#
 );
@@ -197,11 +200,11 @@ test!(
     r#"
         class Component { static async server() { console.log("server") } };
         class Component2 { static async server() { console.log("server") } };
-        Component.registry[`${Component.hash}.server`] = Component.server;
-        Component.registry[Component.hash] = Component;
+        $transpiler.registry[`${Component.hash}.server`] = Component.server;
+        $transpiler.registry[Component.hash] = Component;
         Component.bindStaticFunctions(Component);
-        Component2.registry[`${Component2.hash}.server`] = Component2.server;
-        Component2.registry[Component2.hash] = Component2;
+        $transpiler.registry[`${Component2.hash}.server`] = Component2.server;
+        $transpiler.registry[Component2.hash] = Component2;
         Component2.bindStaticFunctions(Component2);
     "#
 );
@@ -217,8 +220,8 @@ test!(
     r#"
         class Component { static async server() { console.log("server") } };
         class Component2 { };
-        Component.registry[`${Component.hash}.server`] = Component.server;
-        Component.registry[Component.hash] = Component;
+        $transpiler.registry[`${Component.hash}.server`] = Component.server;
+        $transpiler.registry[Component.hash] = Component;
         Component.bindStaticFunctions(Component);
     "#
 );

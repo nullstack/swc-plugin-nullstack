@@ -31,8 +31,7 @@ impl ReplaceServerFunctionVisitor {
         }
     }
 
-    fn invoke_arg_function_name(&self, key: PropName) -> ExprOrSpread {
-        let function_name = key.clone().ident().unwrap().sym;
+    fn invoke_arg_function_name(&self, function_name: JsWord) -> ExprOrSpread {
         ExprOrSpread {
             spread: None,
             expr: Box::new(Expr::Lit(Lit::Str(Str {
@@ -44,12 +43,18 @@ impl ReplaceServerFunctionVisitor {
     }
 
     fn invoke_value(&self, key: PropName) -> Option<Box<Expr>> {
-        Option::Some(Box::new(Expr::Call(CallExpr {
-            span: DUMMY_SP,
-            callee: invoke_calle(),
-            args: vec![self.invoke_arg_function_name(key), self.invoke_arg_hash()],
-            type_args: None,
-        })))
+        match key.clone().ident() {
+            Some(function_name) => Option::Some(Box::new(Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                callee: invoke_calle(),
+                args: vec![
+                    self.invoke_arg_function_name(function_name.sym),
+                    self.invoke_arg_hash(),
+                ],
+                type_args: None,
+            }))),
+            _ => None,
+        }
     }
 
     fn invoke_prop(&self, key: PropName) -> ClassMember {
@@ -76,12 +81,12 @@ fn invoke_calle() -> Callee {
         span: DUMMY_SP,
         obj: Box::new(Expr::Ident(Ident {
             span: DUMMY_SP,
-            sym: "Nullstack".into(),
+            sym: "$transpiler".into(),
             optional: false,
         })),
         prop: MemberProp::Ident(Ident {
             span: DUMMY_SP,
-            sym: "_invoke".into(),
+            sym: "invoke".into(),
             optional: false,
         }),
     })))
@@ -96,7 +101,6 @@ impl VisitMut for ReplaceServerFunctionVisitor {
                 *n = self.invoke_prop(m.key.clone());
             }
         }
-        //newSource += `\nif (module.hot) { module.hot.accept(); Nullstack.updateInstancesPrototypes(${klassName}, ${klassName}.hash) }`
     }
 }
 
@@ -117,7 +121,7 @@ test!(
     |_| tr(),
     inject_nullstack,
     r#"class Component { static async server() { console.log("server") } };"#,
-    r#"class Component { static server = Nullstack._invoke('server', this.hash) };"#
+    r#"class Component { static server = $transpiler.invoke('server', this.hash) };"#
 );
 
 test!(

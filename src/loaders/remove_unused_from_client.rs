@@ -85,16 +85,16 @@ impl VisitMut for RemoveUnusedVisitor {
     fn visit_mut_class_member(&mut self, n: &mut ClassMember) {
         n.visit_mut_children_with(self);
         if let ClassMember::Method(m) = n {
-            if m.key.clone().ident().is_some() {
-                self.reject_list.push(m.key.clone().ident().unwrap())
+            if let Some(ident) = m.key.clone().ident() {
+                self.reject_list.push(ident);
             }
         }
     }
 
     fn visit_mut_member_expr(&mut self, n: &mut MemberExpr) {
         n.visit_mut_children_with(self);
-        if n.prop.clone().ident().is_some() {
-            self.reject_list.push(n.prop.clone().ident().unwrap());
+        if let Some(ident) = n.prop.clone().ident() {
+            self.reject_list.push(ident);
         }
     }
 
@@ -105,8 +105,8 @@ impl VisitMut for RemoveUnusedVisitor {
 
     fn visit_mut_var_declarator(&mut self, n: &mut VarDeclarator) {
         n.visit_mut_children_with(self);
-        if n.name.clone().ident().is_some() {
-            self.reject_list.push(n.name.clone().ident().unwrap().id);
+        if let Some(ident) = n.name.clone().ident() {
+            self.reject_list.push(ident.id);
         }
     }
 }
