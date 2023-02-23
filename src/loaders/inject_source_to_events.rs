@@ -1,9 +1,8 @@
 use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
-    visit::{as_folder, noop_visit_mut_type, Fold, VisitMut},
+    visit::{noop_visit_mut_type, VisitMut},
 };
-use swc_ecma_parser::{EsConfig, Syntax};
 
 #[derive(Default)]
 pub struct InjectSourceVisitor {}
@@ -50,16 +49,4 @@ impl VisitMut for InjectSourceVisitor {
             n.attrs.push(self.source_attribute())
         }
     }
-}
-
-#[allow(dead_code)]
-fn tr() -> impl Fold {
-    as_folder(InjectSourceVisitor::default())
-}
-
-#[allow(dead_code)]
-fn syntax() -> Syntax {
-    let mut config = EsConfig::default();
-    config.jsx = true;
-    Syntax::Es(config)
 }

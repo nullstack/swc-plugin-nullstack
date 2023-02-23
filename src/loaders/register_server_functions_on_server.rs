@@ -53,12 +53,12 @@ fn register_class(n: &ClassDecl) -> ModuleItem {
                     span: DUMMY_SP,
                     expr: Box::new(Expr::Member(MemberExpr {
                         span: DUMMY_SP,
-                        obj: box_ident_expr(n.ident.sym.clone().into()),
+                        obj: box_ident_expr(n.ident.sym.clone()),
                         prop: member_prop_ident("hash".into()),
                     })),
                 }),
             }))),
-            right: box_ident_expr(n.ident.sym.clone().into()),
+            right: box_ident_expr(n.ident.sym.clone()),
         })),
     }))
 }
@@ -83,19 +83,16 @@ fn register_function(n: &ClassDecl, f: &Ident) -> ModuleItem {
                         span: DUMMY_SP,
                         exprs: vec![Box::new(Expr::Member(MemberExpr {
                             span: DUMMY_SP,
-                            obj: box_ident_expr(n.ident.sym.clone().into()),
+                            obj: box_ident_expr(n.ident.sym.clone()),
                             prop: member_prop_ident("hash".into()),
                         }))],
-                        quasis: vec![
-                            tpl_element("".into()),
-                            tpl_element(invocation.clone().into()),
-                        ],
+                        quasis: vec![tpl_element("".into()), tpl_element(invocation.into())],
                     })),
                 }),
             }))),
             right: Box::new(Expr::Member(MemberExpr {
                 span: DUMMY_SP,
-                obj: box_ident_expr(n.ident.sym.clone().into()),
+                obj: box_ident_expr(n.ident.sym.clone()),
                 prop: member_prop_ident(f.sym.clone()),
             })),
         })),
@@ -109,12 +106,12 @@ fn register_bind(n: &ClassDecl) -> ModuleItem {
             span: DUMMY_SP,
             callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
                 span: DUMMY_SP,
-                obj: box_ident_expr(n.ident.sym.clone().into()),
+                obj: box_ident_expr(n.ident.sym.clone()),
                 prop: member_prop_ident("bindStaticFunctions".into()),
             }))),
             args: vec![ExprOrSpread {
                 spread: None,
-                expr: box_ident_expr(n.ident.sym.clone().into()),
+                expr: box_ident_expr(n.ident.sym.clone()),
             }],
             type_args: None,
         })),
