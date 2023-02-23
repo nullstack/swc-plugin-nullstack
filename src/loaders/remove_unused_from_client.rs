@@ -1,28 +1,19 @@
-use std::borrow::Borrow;
 use swc_core::ecma::{
     ast::*,
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
 
+#[derive(Default)]
 pub struct RemoveUnusedVisitor {
     reject_list: Vec<Ident>,
     ident_list: Vec<Ident>,
 }
 
-impl Default for RemoveUnusedVisitor {
-    fn default() -> Self {
-        RemoveUnusedVisitor {
-            reject_list: vec![],
-            ident_list: vec![],
-        }
-    }
-}
-
-fn specifier_ident(specifier: ImportSpecifier) -> Ident {
+fn specifier_ident(specifier: &ImportSpecifier) -> Ident {
     match specifier {
-        ImportSpecifier::Default(s) => s.local,
-        ImportSpecifier::Named(s) => s.local,
-        ImportSpecifier::Namespace(s) => s.local,
+        ImportSpecifier::Default(s) => s.local.clone(),
+        ImportSpecifier::Named(s) => s.local.clone(),
+        ImportSpecifier::Namespace(s) => s.local.clone(),
     }
 }
 
@@ -35,23 +26,10 @@ fn is_equal(a: &Ident, b: &Ident) -> bool {
         && a.span.lo.0 == b.span.lo.0
 }
 
-fn allow_list(list: Vec<Ident>, reject: Vec<Ident>) -> Vec<Ident> {
-    let mut allow_list = list.clone();
-    allow_list.retain(|item| {
-        reject
-            .clone()
-            .into_iter()
-            .find(|i| is_equal(item.borrow(), i.borrow()))
-            .is_none()
-    });
+fn allow_list(list: &[Ident], reject: &[Ident]) -> Vec<Ident> {
+    let mut allow_list = list.to_vec();
+    allow_list.retain(|item| !reject.iter().any(|i| is_equal(item, i)));
     allow_list
-}
-
-fn should_retain(allow_list: Vec<Ident>, item: Ident) -> bool {
-    allow_list
-        .into_iter()
-        .find(|i| item.to_id() == i.to_id())
-        .is_some()
 }
 
 impl VisitMut for RemoveUnusedVisitor {
@@ -59,22 +37,19 @@ impl VisitMut for RemoveUnusedVisitor {
 
     fn visit_mut_module(&mut self, n: &mut Module) {
         n.visit_mut_children_with(self);
-        let allow = allow_list(self.ident_list.clone(), self.reject_list.clone());
+        let allow = allow_list(&self.ident_list, &self.reject_list);
         n.body.retain(|item| match item.clone() {
-            ModuleItem::ModuleDecl(ModuleDecl::Import(a)) => {
-                for specifier in a.specifiers.clone().into_iter() {
-                    let ident = specifier_ident(specifier);
-                    return should_retain(allow.clone(), ident);
-                }
-                true
-            }
+            ModuleItem::ModuleDecl(ModuleDecl::Import(a)) => a.specifiers.iter().any(|s| {
+                let ident = specifier_ident(s);
+                allow.iter().any(|i| ident.to_id() == i.to_id())
+            }),
             _ => true,
         });
     }
 
     fn visit_mut_import_specifier(&mut self, n: &mut ImportSpecifier) {
         n.visit_mut_children_with(self);
-        let ident = specifier_ident(n.clone());
+        let ident = specifier_ident(n);
         self.reject_list.push(ident);
     }
 

@@ -5,13 +5,8 @@ use swc_core::ecma::{
     visit::{noop_visit_mut_type, VisitMut},
 };
 
+#[derive(Default)]
 pub struct ReplaceServerFunctionVisitor {}
-
-impl Default for ReplaceServerFunctionVisitor {
-    fn default() -> Self {
-        ReplaceServerFunctionVisitor {}
-    }
-}
 
 impl ReplaceServerFunctionVisitor {
     fn invoke_arg_hash(&self) -> ExprOrSpread {
@@ -41,7 +36,7 @@ impl ReplaceServerFunctionVisitor {
     }
 
     fn invoke_value(&self, key: PropName) -> Option<Box<Expr>> {
-        match key.clone().ident() {
+        match key.ident() {
             Some(function_name) => Option::Some(Box::new(Expr::Call(CallExpr {
                 span: DUMMY_SP,
                 callee: invoke_calle(),

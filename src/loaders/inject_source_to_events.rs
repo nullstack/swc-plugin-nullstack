@@ -5,13 +5,8 @@ use swc_core::ecma::{
 };
 use swc_ecma_parser::{EsConfig, Syntax};
 
+#[derive(Default)]
 pub struct InjectSourceVisitor {}
-
-impl Default for InjectSourceVisitor {
-    fn default() -> Self {
-        InjectSourceVisitor {}
-    }
-}
 
 impl InjectSourceVisitor {
     fn should_inject_source_attribute(&self, n: &JSXOpeningElement) -> bool {

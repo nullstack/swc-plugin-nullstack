@@ -5,18 +5,10 @@ use swc_core::ecma::{
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
 
+#[derive(Default)]
 pub struct RegisterServerFunctionVisitor {
     registry: Vec<ModuleItem>,
     current_class: Option<ClassDecl>,
-}
-
-impl Default for RegisterServerFunctionVisitor {
-    fn default() -> Self {
-        RegisterServerFunctionVisitor {
-            registry: vec![],
-            current_class: None,
-        }
-    }
 }
 
 fn member_prop_ident(sym: JsWord) -> MemberProp {
