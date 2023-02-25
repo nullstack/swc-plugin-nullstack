@@ -1,3 +1,4 @@
+use super::helpers::transpiler_ident;
 use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
@@ -72,11 +73,7 @@ impl ReplaceServerFunctionVisitor {
 fn invoke_calle() -> Callee {
     Callee::Expr(Box::new(Expr::Member(MemberExpr {
         span: DUMMY_SP,
-        obj: Box::new(Expr::Ident(Ident {
-            span: DUMMY_SP,
-            sym: "$transpiler".into(),
-            optional: false,
-        })),
+        obj: Box::new(Expr::Ident(transpiler_ident())),
         prop: MemberProp::Ident(Ident {
             span: DUMMY_SP,
             sym: "invoke".into(),

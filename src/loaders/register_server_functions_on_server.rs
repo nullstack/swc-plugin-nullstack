@@ -5,6 +5,8 @@ use swc_core::ecma::{
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
 
+use super::helpers::transpiler_ident;
+
 #[derive(Default)]
 pub struct RegisterServerFunctionVisitor {
     registry: Vec<ModuleItem>,
@@ -46,7 +48,7 @@ fn register_class(n: &ClassDecl) -> ModuleItem {
                 span: DUMMY_SP,
                 obj: Box::new(Expr::Member(MemberExpr {
                     span: DUMMY_SP,
-                    obj: box_ident_expr("$transpiler".into()),
+                    obj: Box::new(Expr::Ident(transpiler_ident())),
                     prop: member_prop_ident("registry".into()),
                 })),
                 prop: MemberProp::Computed(ComputedPropName {
@@ -74,7 +76,7 @@ fn register_function(n: &ClassDecl, f: &Ident) -> ModuleItem {
                 span: DUMMY_SP,
                 obj: Box::new(Expr::Member(MemberExpr {
                     span: DUMMY_SP,
-                    obj: box_ident_expr("$transpiler".into()),
+                    obj: Box::new(Expr::Ident(transpiler_ident())),
                     prop: member_prop_ident("registry".into()),
                 })),
                 prop: MemberProp::Computed(ComputedPropName {
@@ -124,7 +126,6 @@ impl VisitMut for RegisterServerFunctionVisitor {
     fn visit_mut_module(&mut self, n: &mut Module) {
         n.visit_mut_children_with(self);
         n.body.extend(self.registry.clone());
-        // if (module.hot) { module.hot.accept(); }
     }
 
     fn visit_mut_class_decl(&mut self, n: &mut ClassDecl) {
