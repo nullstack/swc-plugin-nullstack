@@ -1,23 +1,12 @@
 #[allow(unused_imports)]
 use super::syntax;
+use super::tr;
 use crate::loaders::inject_inner_components_to_class::InjectInnerComponentVisitor;
-use swc_common::{chain, Mark};
-use swc_core::ecma::{
-    transforms::{base::resolver, testing::test},
-    visit::{as_folder, Fold},
-};
-
-#[allow(dead_code)]
-fn tr() -> impl Fold {
-    chain!(
-        resolver(Mark::new(), Mark::new(), false),
-        as_folder(InjectInnerComponentVisitor::default())
-    )
-}
+use swc_core::ecma::transforms::testing::test;
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(InjectInnerComponentVisitor::default()),
     skip_inject_outter_components,
     r#"
         import OutterComponent from 'oc';
@@ -39,7 +28,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(InjectInnerComponentVisitor::default()),
     skip_inject_declared_variables,
     r#"
         class Component {
@@ -61,7 +50,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(InjectInnerComponentVisitor::default()),
     skip_inject_destructured_renamed_args,
     r#"
         class Component {
@@ -81,7 +70,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(InjectInnerComponentVisitor::default()),
     skip_inject_destructured_args,
     r#"
         class Component {
@@ -101,7 +90,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(InjectInnerComponentVisitor::default()),
     skip_inject_declared_functions,
     r#"
         class Component {
@@ -123,7 +112,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(InjectInnerComponentVisitor::default()),
     inject_inner_components,
     r#"
         class Component {
@@ -144,7 +133,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(InjectInnerComponentVisitor::default()),
     inject_inner_components_per_function,
     r#"
         class Component {
@@ -175,7 +164,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(InjectInnerComponentVisitor::default()),
     inject_inner_components_all_functions,
     r#"
         class Component {

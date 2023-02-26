@@ -2,8 +2,8 @@ mod loaders;
 use loaders::{
     inject_hash_to_class::InjectHashVisitor,
     inject_inner_components_to_class::InjectInnerComponentVisitor,
+    inject_runtime_to_module::InjectTranspilerVisitor,
     inject_source_to_events::InjectSourceVisitor,
-    inject_transpiler_to_module::InjectTranspilerVisitor,
     register_server_functions_on_server::RegisterServerFunctionVisitor,
     remove_styles_on_server::RemoveStylesVisitor, remove_unused_from_client::RemoveUnusedVisitor,
     replace_ref_on_attributes::ReplaceRefVisitor,
@@ -45,6 +45,8 @@ pub fn process_transform(
         .unwrap_or_else(|_| NullstackPluginOptions::default());
     let file_path = absolute_file_path.replace(&cwd, "");
 
+    program.visit_mut_with(&mut InjectTranspilerVisitor::default());
+
     program.visit_mut_with(&mut ReplaceRefVisitor::default());
     program.visit_mut_with(&mut InjectSourceVisitor::default());
     program.visit_mut_with(&mut InjectHashVisitor::new(file_path, config.development));
@@ -57,8 +59,6 @@ pub fn process_transform(
         program.visit_mut_with(&mut RemoveStylesVisitor::default());
         program.visit_mut_with(&mut RegisterServerFunctionVisitor::default());
     }
-
-    program.visit_mut_with(&mut InjectTranspilerVisitor::default());
 
     program
 }

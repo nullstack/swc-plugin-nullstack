@@ -39,10 +39,18 @@ impl VisitMut for RemoveUnusedVisitor {
         n.visit_mut_children_with(self);
         let allow = allow_list(&self.ident_list, &self.reject_list);
         n.body.retain(|item| match item.clone() {
-            ModuleItem::ModuleDecl(ModuleDecl::Import(a)) => a.specifiers.iter().any(|s| {
-                let ident = specifier_ident(s);
-                allow.iter().any(|i| ident.to_id() == i.to_id())
-            }),
+            ModuleItem::ModuleDecl(ModuleDecl::Import(a)) => {
+                if a.src.value.eq_str_ignore_ascii_case("nullstack/runtime") {
+                    return true;
+                }
+                if a.specifiers.is_empty() {
+                    return true;
+                }
+                a.specifiers.iter().any(|s| {
+                    let ident = specifier_ident(s);
+                    allow.iter().any(|i| ident.to_id() == i.to_id())
+                })
+            }
             _ => true,
         });
     }

@@ -1,17 +1,12 @@
 #[allow(unused_imports)]
 use super::syntax;
+use super::tr;
 use crate::loaders::replace_ref_on_attributes::ReplaceRefVisitor;
 use swc_core::ecma::transforms::testing::test;
-use swc_core::ecma::visit::{as_folder, Fold};
-
-#[allow(dead_code)]
-fn tr() -> impl Fold {
-    as_folder(ReplaceRefVisitor::default())
-}
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(ReplaceRefVisitor::default()),
     replace_simple_ref,
     r#"class Component {
         render() {
@@ -27,7 +22,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(ReplaceRefVisitor::default()),
     replace_ref_array_with_literal_index,
     r#"class Component {
         render() {
@@ -43,7 +38,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(ReplaceRefVisitor::default()),
     replace_ref_array_with_variable_index,
     r#"class Component {
         render() {
@@ -59,7 +54,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(ReplaceRefVisitor::default()),
     replace_ref_array_with_private_index,
     r#"class Component {
         render() {
@@ -75,7 +70,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(ReplaceRefVisitor::default()),
     replace_simple_bind,
     r#"class Component {
         render() {
@@ -91,7 +86,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(ReplaceRefVisitor::default()),
     replace_bind_array_with_literal_index,
     r#"class Component {
         render() {
@@ -107,7 +102,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(ReplaceRefVisitor::default()),
     replace_bind_array_with_variable_index,
     r#"class Component {
         render() {
@@ -123,7 +118,7 @@ test!(
 
 test!(
     syntax(),
-    |_| tr(),
+    |_| tr(ReplaceRefVisitor::default()),
     replace_bind_array_with_private_index,
     r#"class Component {
         render() {

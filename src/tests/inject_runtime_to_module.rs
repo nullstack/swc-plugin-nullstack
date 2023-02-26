@@ -1,13 +1,13 @@
 #[allow(unused_imports)]
 use super::syntax;
 use super::tr;
-use crate::loaders::inject_transpiler_to_module::InjectTranspilerVisitor;
+use crate::loaders::inject_runtime_to_module::InjectTranspilerVisitor;
 use swc_core::ecma::transforms::testing::test;
 
 test!(
     syntax(),
     |_| tr(InjectTranspilerVisitor::default()),
-    inject_transpiler,
+    inject_runtime_to_classes,
     r#"
         import Nullstack from "nullstack"; 
         class Component {
@@ -16,7 +16,8 @@ test!(
         };
     "#,
     r#"
-        import Nullstack, { $transpiler } from "nullstack"; 
+        import $runtime from "nullstack/runtime";
+        import Nullstack from "nullstack"; 
         class Component {
             static async server() {}
             render() { return <div>hello</div> }
@@ -27,7 +28,7 @@ test!(
 test!(
     syntax(),
     |_| tr(InjectTranspilerVisitor::default()),
-    inject_transpiler_in_same_context,
+    inject_runtime_to_functions,
     r#"function Component() { return <div>hello</div> }"#,
-    r#"import { $transpiler } from "nullstack"; function Component() { return <div>hello</div> }"#
+    r#"import $runtime from "nullstack/runtime"; function Component() { return <div>hello</div> }"#
 );

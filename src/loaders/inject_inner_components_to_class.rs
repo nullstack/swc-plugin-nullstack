@@ -1,5 +1,4 @@
 use std::borrow::BorrowMut;
-
 use swc_core::ecma::{
     ast::*,
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
