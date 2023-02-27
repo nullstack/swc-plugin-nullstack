@@ -1,6 +1,6 @@
 mod loaders;
 use loaders::{
-    inject_hash_to_class::InjectHashVisitor,
+    inject_accept_to_module::InjectAcceptVisitor, inject_hash_to_class::InjectHashVisitor,
     inject_inner_components_to_class::InjectInnerComponentVisitor,
     inject_runtime_to_module::InjectTranspilerVisitor,
     inject_source_to_events::InjectSourceVisitor,
@@ -25,6 +25,8 @@ struct NullstackPluginOptions {
     development: bool,
     #[serde(default)]
     client: bool,
+    #[serde(default)]
+    template: bool,
 }
 
 #[plugin_transform]
@@ -45,19 +47,20 @@ pub fn process_transform(
         .unwrap_or_else(|_| NullstackPluginOptions::default());
     let file_path = absolute_file_path.replace(&cwd, "");
 
-    program.visit_mut_with(&mut InjectTranspilerVisitor::default());
-
-    program.visit_mut_with(&mut ReplaceRefVisitor::default());
-    program.visit_mut_with(&mut InjectSourceVisitor::default());
-    program.visit_mut_with(&mut InjectHashVisitor::new(file_path, config.development));
-    program.visit_mut_with(&mut InjectInnerComponentVisitor::default());
-
-    if config.client {
-        program.visit_mut_with(&mut ReplaceServerFunctionVisitor::default());
-        program.visit_mut_with(&mut RemoveUnusedVisitor::default());
-    } else {
-        program.visit_mut_with(&mut RemoveStylesVisitor::default());
-        program.visit_mut_with(&mut RegisterServerFunctionVisitor::default());
+    if config.template {
+        program.visit_mut_with(&mut InjectTranspilerVisitor::default());
+        program.visit_mut_with(&mut ReplaceRefVisitor::default());
+        program.visit_mut_with(&mut InjectSourceVisitor::default());
+        program.visit_mut_with(&mut InjectHashVisitor::new(file_path, config.development));
+        program.visit_mut_with(&mut InjectInnerComponentVisitor::default());
+        program.visit_mut_with(&mut InjectAcceptVisitor::default());
+        if config.client {
+            program.visit_mut_with(&mut ReplaceServerFunctionVisitor::default());
+            program.visit_mut_with(&mut RemoveUnusedVisitor::default());
+        } else {
+            program.visit_mut_with(&mut RemoveStylesVisitor::default());
+            program.visit_mut_with(&mut RegisterServerFunctionVisitor::default());
+        }
     }
 
     program
