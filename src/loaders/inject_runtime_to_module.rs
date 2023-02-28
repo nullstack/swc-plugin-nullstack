@@ -5,7 +5,7 @@ use swc_core::ecma::{
 };
 
 #[derive(Default)]
-pub struct InjectTranspilerVisitor {
+pub struct InjectRuntimeVisitor {
     has_runtime: bool,
 }
 
@@ -26,7 +26,7 @@ fn runtime_import() -> ModuleItem {
     }))
 }
 
-impl VisitMut for InjectTranspilerVisitor {
+impl VisitMut for InjectRuntimeVisitor {
     noop_visit_mut_type!();
 
     fn visit_mut_module(&mut self, n: &mut Module) {
@@ -36,7 +36,7 @@ impl VisitMut for InjectTranspilerVisitor {
         }
     }
 
-    fn visit_mut_import_default_specifier(&mut self,n: &mut ImportDefaultSpecifier) {
+    fn visit_mut_import_default_specifier(&mut self, n: &mut ImportDefaultSpecifier) {
         if n.local.sym.eq("$runtime") {
             self.has_runtime = true
         }
