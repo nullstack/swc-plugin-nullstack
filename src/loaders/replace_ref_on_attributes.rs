@@ -12,7 +12,7 @@ impl VisitMut for ReplaceRefVisitor {
     noop_visit_mut_type!();
 
     fn visit_mut_jsx_attr_or_spread(&mut self, n: &mut JSXAttrOrSpread) {
-        if let JSXAttrOrSpread::JSXAttr(attr) = n {
+        if let JSXAttrOrSpread::JSXAttr(attr) = &n {
             if let JSXAttrName::Ident(ident) = &attr.name {
                 if ident.sym.eq("ref") || ident.sym.eq("bind") {
                     if let Some(JSXAttrValue::JSXExprContainer(container)) = &attr.value {
@@ -57,6 +57,8 @@ impl VisitMut for ReplaceRefVisitor {
                     }))),
                 ],
             })));
+        } else {
+            n.visit_mut_children_with(self);
         }
     }
 }

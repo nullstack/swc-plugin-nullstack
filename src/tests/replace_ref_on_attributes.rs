@@ -42,12 +42,50 @@ test!(
     replace_ref_array_with_variable_index,
     r#"class Component {
         render() {
-            return <div ref={this.elements[this.index]} />
+            return <div ref={this.elements[index]} />
         }
     };"#,
     r#"class Component {
         render() {
-            return <div ref={{object: this.elements, property: this.index}} />
+            return <div ref={{object: this.elements, property: index}} />
+        }
+    };"#
+);
+
+test!(
+    syntax(),
+    |_| tr(ReplaceRefVisitor::default()),
+    replace_ref_array_with_variable_index_on_variable,
+    r#"class Component {
+        render() {
+            return <div ref={elements[index]} />
+        }
+    };"#,
+    r#"class Component {
+        render() {
+            return <div ref={{object: elements, property: index}} />
+        }
+    };"#
+);
+
+test!(
+    syntax(),
+    |_| tr(ReplaceRefVisitor::default()),
+    replace_ref_array_with_variable_index_map,
+    r#"class Component {
+        render() {
+            return <div>
+                {this.array.map((value, index) => <input bind={this.array[index]} name={index.toString()} />)}
+            </div>
+            
+        }
+    };"#,
+    r#"class Component {
+        render() {
+            return <div>
+                {this.array.map((value, index) => <input bind={{object: this.array, property: index}} name={index.toString()} />)}
+            </div>
+            
         }
     };"#
 );

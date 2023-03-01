@@ -53,7 +53,9 @@ pub fn process_transform(
         program.visit_mut_with(&mut InjectSourceVisitor::default());
         program.visit_mut_with(&mut InjectHashVisitor::new(file_path, config.development));
         program.visit_mut_with(&mut InjectInnerComponentVisitor::default());
-        program.visit_mut_with(&mut InjectAcceptVisitor::default());
+        if config.development {
+            program.visit_mut_with(&mut InjectAcceptVisitor::default());
+        }
         if config.client {
             program.visit_mut_with(&mut ReplaceServerFunctionVisitor::default());
             program.visit_mut_with(&mut RemoveUnusedVisitor::default());
@@ -61,10 +63,11 @@ pub fn process_transform(
             program.visit_mut_with(&mut RemoveStylesVisitor::default());
             program.visit_mut_with(&mut RegisterServerFunctionVisitor::default());
         }
-    } else if file_path.eq("server.js")
-        || file_path.eq("server.ts")
-        || file_path.eq("client.js")
-        || file_path.eq("client.ts")
+    } else if config.development
+        && (file_path.eq("server.js")
+            || file_path.eq("server.ts")
+            || file_path.eq("client.js")
+            || file_path.eq("client.ts"))
     {
         program.visit_mut_with(&mut InjectRuntimeVisitor::default());
         program.visit_mut_with(&mut InjectRestartVisitor::default());
