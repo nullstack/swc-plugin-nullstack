@@ -191,3 +191,69 @@ test!(
         }
     "#
 );
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    skip_inner_components_with_top_level_const,
+    r#"
+        const InnerComponent = {};
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#,
+    r#"
+        const InnerComponent = {};
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    inject_inner_components_with_top_renamed_destructured_const,
+    r#"
+        const {InnerComponent: Nope} = {};
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#,
+    r#"
+        const {InnerComponent: Nope} = {};
+        class Component {
+            render() {
+                const InnerComponent = this.renderInnerComponent;
+                return <InnerComponent />;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    inject_inner_components_with_top_renamed_destructured_params,
+    r#"
+        class Component {
+            render({InnerComponent: Nope}) {
+                return <InnerComponent />;
+            }
+        }
+    "#,
+    r#"
+        class Component {
+            render({InnerComponent: Nope}) {
+                const InnerComponent = this.renderInnerComponent;
+                return <InnerComponent />;
+            }
+        }
+    "#
+);
