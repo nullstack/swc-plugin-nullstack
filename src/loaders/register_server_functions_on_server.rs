@@ -81,8 +81,10 @@ impl VisitMut for RegisterServerFunctionVisitor {
             if m.is_static && m.function.is_async {
                 if let Some(class) = self.current_class.clone() {
                     if let Some(function_name) = m.key.clone().ident() {
-                        self.registry
-                            .push(runtime_register_function(&class.ident, &function_name));
+                        if !function_name.sym.starts_with('_') {
+                            self.registry
+                                .push(runtime_register_function(&class.ident, &function_name));
+                        }
                     }
                 }
             }

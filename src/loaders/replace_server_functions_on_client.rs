@@ -1,8 +1,9 @@
 use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
-    visit::{noop_visit_mut_type, VisitMut},
+    visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
+use tracing::info;
 
 #[derive(Default)]
 pub struct ReplaceServerFunctionVisitor {}
@@ -66,9 +67,26 @@ fn runtime_invoke(function_name: &Ident) -> ClassMember {
 impl VisitMut for ReplaceServerFunctionVisitor {
     noop_visit_mut_type!();
 
+    fn visit_mut_class_members(&mut self, n: &mut Vec<ClassMember>) {
+        n.retain(|member| {
+            if let ClassMember::Method(m) = member {
+                if m.is_static && m.function.is_async {
+                    if let Some(function_name) = &m.key.clone().ident() {
+                        info!("RETAIN: {:#?}", function_name.clone());
+                        if function_name.sym.starts_with('_') {
+                            return false;
+                        }
+                    }
+                }
+            }
+            true
+        });
+        n.visit_mut_children_with(self);
+    }
+
     fn visit_mut_class_member(&mut self, n: &mut ClassMember) {
         if let ClassMember::Method(m) = n {
-            if m.is_static && m.function.is_async && m.key.clone().ident().is_some() {
+            if m.is_static && m.function.is_async {
                 if let Some(function_name) = &m.key.clone().ident() {
                     *n = runtime_invoke(function_name);
                 }

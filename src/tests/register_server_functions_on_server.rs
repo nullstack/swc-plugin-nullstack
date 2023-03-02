@@ -49,3 +49,23 @@ test!(
         $runtime.register(Component);
     "#
 );
+
+test!(
+    Default::default(),
+    |_| tr(RegisterServerFunctionVisitor::default()),
+    skip_register_server_functions_starting_with_underline,
+    r#"
+        class Component { 
+            static async server() { console.log("server") }
+            static async _private() { console.log("server") } 
+        };
+    "#,
+    r#"
+        class Component { 
+            static async server() { console.log("server") }
+            static async _private() { console.log("server") } 
+        };
+        $runtime.register(Component, "server");
+        $runtime.register(Component);
+    "#
+);

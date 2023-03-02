@@ -27,3 +27,11 @@ test!(
     r#"class Component { async server() { console.log("client") } };"#,
     r#"class Component { async server() { console.log("client") } };"#
 );
+
+test!(
+    syntax(),
+    |_| tr(ReplaceServerFunctionVisitor::default()),
+    remove_server_functions_starting_with_underline,
+    r#"class Component { static async _server() { console.log("client") } };"#,
+    r#"class Component { };"#
+);

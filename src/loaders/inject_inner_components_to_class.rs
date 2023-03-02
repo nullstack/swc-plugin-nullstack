@@ -3,7 +3,6 @@ use swc_core::ecma::{
     ast::*,
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
-use tracing::info;
 
 #[derive(Default)]
 pub struct InjectInnerComponentVisitor {
@@ -49,15 +48,16 @@ impl VisitMut for InjectInnerComponentVisitor {
 
     fn visit_mut_ident(&mut self, n: &mut Ident) {
         if !self.is_inside_class {
-            push_if_uppercase(&mut self.outter_idents, &n);
+            push_if_uppercase(&mut self.outter_idents, n);
         } else if self.is_inside_tag {
-            push_if_uppercase(&mut self.inner_tags, &n);
+            push_if_uppercase(&mut self.inner_tags, n);
         } else if self.is_inside_method {
-            push_if_uppercase(&mut self.inner_idents, &n);
+            push_if_uppercase(&mut self.inner_idents, n);
         }
     }
 
     fn visit_mut_class_decl(&mut self, n: &mut ClassDecl) {
+        push_if_uppercase(&mut self.outter_idents, &n.ident);
         self.is_inside_class = true;
         n.visit_mut_children_with(self);
         self.is_inside_class = false;
@@ -70,10 +70,6 @@ impl VisitMut for InjectInnerComponentVisitor {
                 n.function.visit_mut_children_with(self);
                 self.is_inside_method = false;
                 for inner_tag in self.inner_tags.iter() {
-                    info!(
-                        "\n\n IN {:#?} - OUT {:#?} - TAGS {:#?}\n\n",
-                        self.inner_idents, self.outter_idents, self.inner_tags
-                    );
                     if !self.outter_idents.iter().any(|i| i.sym == inner_tag.sym)
                         && !self.inner_idents.iter().any(|i| i.sym == inner_tag.sym)
                     {
@@ -95,7 +91,7 @@ impl VisitMut for InjectInnerComponentVisitor {
     fn visit_mut_jsx_opening_element(&mut self, n: &mut JSXOpeningElement) {
         if self.is_inside_method {
             self.is_inside_tag = true;
-            n.visit_mut_children_with(self);
+            n.name.visit_mut_children_with(self);
             self.is_inside_tag = false;
         }
     }
