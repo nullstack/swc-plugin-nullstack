@@ -38,16 +38,22 @@ fn inject_constant(ident: &Ident) -> Stmt {
     })))
 }
 
+fn push_if_uppercase(vec: &mut Vec<Ident>, ident: &Ident) {
+    if ident.sym.chars().next().unwrap_or_default().is_uppercase() {
+        vec.push(ident.clone());
+    }
+}
+
 impl VisitMut for InjectInnerComponentVisitor {
     noop_visit_mut_type!();
 
     fn visit_mut_ident(&mut self, n: &mut Ident) {
         if !self.is_inside_class {
-            self.outter_idents.push(n.clone());
+            push_if_uppercase(&mut self.outter_idents, &n);
         } else if self.is_inside_tag {
-            self.inner_tags.push(n.clone());
+            push_if_uppercase(&mut self.inner_tags, &n);
         } else if self.is_inside_method {
-            self.inner_idents.push(n.clone());
+            push_if_uppercase(&mut self.inner_idents, &n);
         }
     }
 
@@ -93,4 +99,6 @@ impl VisitMut for InjectInnerComponentVisitor {
             self.is_inside_tag = false;
         }
     }
+
+    fn visit_mut_jsx_closing_element(&mut self, _: &mut JSXClosingElement) {}
 }

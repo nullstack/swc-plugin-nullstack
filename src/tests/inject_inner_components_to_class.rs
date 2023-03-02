@@ -257,3 +257,45 @@ test!(
         }
     "#
 );
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    skip_inject_for_regular_tags,
+    r#"
+        class Component {
+            render() {
+                return <div />;
+            }
+        }
+    "#,
+    r#"
+        class Component {
+            render() {
+                return <div />;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    inject_inner_components_with_nested_tags,
+    r#"
+        class Component {
+            render() {
+                return <InnerWrapper><InnerComponent /></InnerWrapper>;
+            }
+        }
+    "#,
+    r#"
+        class Component {
+            render() {
+                const InnerComponent = this.renderInnerComponent;
+                const InnerWrapper = this.renderInnerWrapper;
+                return <InnerWrapper><InnerComponent /></InnerWrapper>;
+            }
+        }
+    "#
+);
