@@ -351,3 +351,24 @@ test!(
         }
     "#
 );
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    inject_inner_component_without_repeating,
+    r#"
+        class Component {
+            render() {
+                return <div><InnerComponent /><InnerComponent /></div>;
+            }
+        }
+    "#,
+    r#"
+        class Component {
+            render() {
+                const InnerComponent = this.renderInnerComponent;
+                return <div><InnerComponent /><InnerComponent /></div>;
+            }
+        }
+    "#
+);

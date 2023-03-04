@@ -1,6 +1,11 @@
 ## TODO
 
-- shut up webpack in swc
-- run css/scss in swc?
-- keep babel loader?
+- keep babel loader
+- are folders cleaning up?
+- multiple instances of an inner component
 - distribute package
+
+## ROADMAP
+- deterministic mangle
+- hardcode environment for dead code removal
+- remove runtime from sourcemap
