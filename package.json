@@ -2,14 +2,14 @@
     "name": "swc-plugin-nullstack",
     "version": "0.1.0",
     "description": "",
+    "main": "./dist/swc-plugin-nullstack.wasm",
     "author": "",
     "license": "ISC",
     "keywords": [
         "swc-plugin"
     ],
-    "main": "target/wasm32-wasi/release/nullstack.wasm",
     "scripts": {
-        "build": "cargo build-wasi --release",
+        "build": "cargo build-wasi --release && mv target/wasm32-wasi/release/nullstack.wasm ./dist/swc-plugin-nullstack.wasm",
         "test": "cargo test"
     },
     "files": [],
