@@ -657,19 +657,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nullstack"
-version = "0.1.0"
-dependencies = [
- "md5",
- "serde",
- "serde_json",
- "swc_common",
- "swc_core",
- "swc_ecma_parser",
- "tracing",
-]
-
-[[package]]
 name = "num-bigint"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1297,6 +1284,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8b945e45b417b125a8ec51f1b7df2f8df7920367700d1f98aedd21e5735f8b2"
 dependencies = [
  "atty",
+]
+
+[[package]]
+name = "swc-plugin-nullstack"
+version = "0.1.0"
+dependencies = [
+ "md5",
+ "serde",
+ "serde_json",
+ "swc_common",
+ "swc_core",
+ "swc_ecma_parser",
+ "tracing",
 ]
 
 [[package]]
