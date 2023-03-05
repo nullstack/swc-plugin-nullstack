@@ -8,14 +8,44 @@ test!(
     syntax(),
     |_| tr(InjectAcceptVisitor::default()),
     inject_accept,
-    r#"class Component {};"#,
-    r#"class Component {}; $runtime.accept(module, Component)"#
+    r#"
+        class Component {};
+    "#,
+    r#"
+        class Component {};
+        $runtime.accept(module, {klasses: [Component], dependencies: []})
+    "#
 );
 
 test!(
     syntax(),
     |_| tr(InjectAcceptVisitor::default()),
     inject_multiple_accept,
-    r#"class Component {}; class Component2 {};"#,
-    r#"class Component {}; class Component2 {}; $runtime.accept(module, Component, Component2)"#
+    r#"
+        class Component {}; 
+        class Component2 {};
+    "#,
+    r#"
+        class Component {}; 
+        class Component2 {}; 
+        $runtime.accept(module, {klasses: [Component, Component2], dependencies: []})
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectAcceptVisitor::default()),
+    inject_multiple_imports,
+    r#"
+        import Nullstack from 'nullstack'; 
+        import Logo from 'nullstack/logo'; 
+        class Component {}; 
+        class Component2 {};
+    "#,
+    r#"
+        import Nullstack from 'nullstack'; 
+        import Logo from 'nullstack/logo'; 
+        class Component {}; 
+        class Component2 {}; 
+        $runtime.accept(module, {klasses: [Component, Component2], dependencies: ["nullstack", "nullstack/logo"]})"#
 );

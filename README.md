@@ -1,7 +1,6 @@
 ## TODO
 
 - keep babel loader
-- are folders cleaning up?
 - distribute package
 
 ## ROADMAP
