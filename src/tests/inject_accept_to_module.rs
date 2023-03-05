@@ -6,20 +6,20 @@ use swc_core::ecma::transforms::testing::test;
 
 test!(
     syntax(),
-    |_| tr(InjectAcceptVisitor::default()),
+    |_| tr(InjectAcceptVisitor::new("/src/Application.njs".into())),
     inject_accept,
     r#"
         class Component {};
     "#,
     r#"
         class Component {};
-        $runtime.accept(module, {klasses: [Component], dependencies: []})
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: []})
     "#
 );
 
 test!(
     syntax(),
-    |_| tr(InjectAcceptVisitor::default()),
+    |_| tr(InjectAcceptVisitor::new("/src/Application.njs".into())),
     inject_multiple_accept,
     r#"
         class Component {}; 
@@ -28,13 +28,13 @@ test!(
     r#"
         class Component {}; 
         class Component2 {}; 
-        $runtime.accept(module, {klasses: [Component, Component2], dependencies: []})
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component, Component2], dependencies: []})
     "#
 );
 
 test!(
     syntax(),
-    |_| tr(InjectAcceptVisitor::default()),
+    |_| tr(InjectAcceptVisitor::new("/src/Application.njs".into())),
     inject_multiple_imports,
     r#"
         import Nullstack from 'nullstack'; 
@@ -47,5 +47,5 @@ test!(
         import Logo from 'nullstack/logo'; 
         class Component {}; 
         class Component2 {}; 
-        $runtime.accept(module, {klasses: [Component, Component2], dependencies: ["nullstack", "nullstack/logo"]})"#
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component, Component2], dependencies: ["nullstack", "nullstack/logo"]})"#
 );

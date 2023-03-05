@@ -9,9 +9,19 @@ use swc_core::ecma::{
 pub struct InjectAcceptVisitor {
     class_names: Vec<Ident>,
     import_paths: Vec<JsWord>,
+    file_path: String,
 }
 
-fn runtime_accept(class_names: &Vec<Ident>, import_paths: &Vec<JsWord>) -> ModuleItem {
+impl InjectAcceptVisitor {
+    pub fn new(file_path: String) -> Self {
+        InjectAcceptVisitor {
+            file_path,
+            ..Default::default()
+        }
+    }
+}
+
+fn runtime_accept(class_names: &[Ident], import_paths: &[JsWord], file_path: &str) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
         expr: Box::new(Expr::Call(CallExpr {
@@ -37,6 +47,14 @@ fn runtime_accept(class_names: &Vec<Ident>, import_paths: &Vec<JsWord>) -> Modul
                         sym: "module".into(),
                         optional: false,
                     })),
+                },
+                ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        value: file_path.into(),
+                        raw: None,
+                    }))),
                 },
                 ExprOrSpread {
                     spread: None,
@@ -99,8 +117,11 @@ impl VisitMut for InjectAcceptVisitor {
 
     fn visit_mut_module(&mut self, n: &mut Module) {
         n.visit_mut_children_with(self);
-        n.body
-            .push(runtime_accept(&self.class_names, &self.import_paths));
+        n.body.push(runtime_accept(
+            &self.class_names,
+            &self.import_paths,
+            &self.file_path,
+        ));
     }
 
     fn visit_mut_import_decl(&mut self, n: &mut ImportDecl) {

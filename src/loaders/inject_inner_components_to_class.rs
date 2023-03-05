@@ -38,10 +38,10 @@ fn inject_constant(ident: &Ident) -> Stmt {
 }
 
 fn push_if_uppercase(vec: &mut Vec<Ident>, ident: &Ident) {
-    if !vec.iter().any(|i| i.sym == ident.sym) {
-        if ident.sym.chars().next().unwrap_or_default().is_uppercase() {
-            vec.push(ident.clone());
-        }
+    if !vec.iter().any(|i| i.sym == ident.sym)
+        && ident.sym.chars().next().unwrap_or_default().is_uppercase()
+    {
+        vec.push(ident.clone());
     }
 }
 
