@@ -1,17 +1,21 @@
 use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
+    atoms::JsWord,
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
-use tracing::info;
 
 #[derive(Default)]
 pub struct ReplaceServerFunctionVisitor {}
 
-fn runtime_invoke(function_name: &Ident) -> ClassMember {
+fn runtime_invoke(function_name: &JsWord) -> ClassMember {
     ClassMember::ClassProp(ClassProp {
         span: DUMMY_SP,
-        key: PropName::Ident(function_name.clone()),
+        key: PropName::Ident(Ident {
+            span: DUMMY_SP,
+            sym: function_name.clone(),
+            optional: false,
+        }),
         value: Some(Box::new(Expr::Call(CallExpr {
             span: DUMMY_SP,
             callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
@@ -32,7 +36,7 @@ fn runtime_invoke(function_name: &Ident) -> ClassMember {
                     spread: None,
                     expr: Box::new(Expr::Lit(Lit::Str(Str {
                         span: DUMMY_SP,
-                        value: function_name.sym.clone(),
+                        value: function_name.clone(),
                         raw: None,
                     }))),
                 },
@@ -72,7 +76,6 @@ impl VisitMut for ReplaceServerFunctionVisitor {
             if let ClassMember::Method(m) = member {
                 if m.is_static && m.function.is_async {
                     if let Some(function_name) = &m.key.clone().ident() {
-                        info!("RETAIN: {:#?}", function_name.clone());
                         if function_name.sym.starts_with('_') {
                             return false;
                         }
@@ -88,7 +91,7 @@ impl VisitMut for ReplaceServerFunctionVisitor {
         if let ClassMember::Method(m) = n {
             if m.is_static && m.function.is_async {
                 if let Some(function_name) = &m.key.clone().ident() {
-                    *n = runtime_invoke(function_name);
+                    *n = runtime_invoke(&function_name.sym);
                 }
             }
         }

@@ -58,6 +58,15 @@ impl VisitMut for InjectInnerComponentVisitor {
         }
     }
 
+    fn visit_mut_class_expr(&mut self, n: &mut ClassExpr) {
+        if let Some(ident) = &n.ident {
+            push_if_uppercase(&mut self.outter_idents, ident);
+        }
+        self.is_inside_class = true;
+        n.visit_mut_children_with(self);
+        self.is_inside_class = false;
+    }
+
     fn visit_mut_class_decl(&mut self, n: &mut ClassDecl) {
         push_if_uppercase(&mut self.outter_idents, &n.ident);
         self.is_inside_class = true;

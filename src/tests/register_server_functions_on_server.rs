@@ -69,3 +69,27 @@ test!(
         $runtime.register(Component);
     "#
 );
+
+test!(
+    Default::default(),
+    |_| tr(RegisterServerFunctionVisitor::default()),
+    register_server_functions_when_exported_as_named,
+    r#"export class Component { static async server() { console.log("server") } };"#,
+    r#"
+        export class Component { static async server() { console.log("server") } };
+        $runtime.register(Component, "server");
+        $runtime.register(Component);
+    "#
+);
+
+test!(
+    Default::default(),
+    |_| tr(RegisterServerFunctionVisitor::default()),
+    register_server_functions_when_exported_as_default,
+    r#"export default class Component { static async server() { console.log("server") } };"#,
+    r#"
+        export default class Component { static async server() { console.log("server") } };
+        $runtime.register(Component, "server");
+        $runtime.register(Component);
+    "#
+);

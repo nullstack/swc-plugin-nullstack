@@ -372,3 +372,45 @@ test!(
         }
     "#
 );
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    injects_inner_component_when_exporting_as_named,
+    r#"
+        export class Component {
+            render() {
+                return <div><InnerComponent /><InnerComponent /></div>;
+            }
+        }
+    "#,
+    r#"
+        export class Component {
+            render() {
+                const InnerComponent = this.renderInnerComponent;
+                return <div><InnerComponent /><InnerComponent /></div>;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    injects_inner_component_when_exporting_as_default,
+    r#"
+        export default class Component {
+            render() {
+                return <div><InnerComponent /><InnerComponent /></div>;
+            }
+        }
+    "#,
+    r#"
+        export default class Component {
+            render() {
+                const InnerComponent = this.renderInnerComponent;
+                return <div><InnerComponent /><InnerComponent /></div>;
+            }
+        }
+    "#
+);

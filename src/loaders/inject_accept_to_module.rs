@@ -128,6 +128,12 @@ impl VisitMut for InjectAcceptVisitor {
         self.import_paths.push(n.src.value.clone());
     }
 
+    fn visit_mut_class_expr(&mut self, n: &mut ClassExpr) {
+        if let Some(ident) = &n.ident {
+            self.class_names.push(ident.clone());
+        }
+    }
+
     fn visit_mut_class_decl(&mut self, n: &mut ClassDecl) {
         self.class_names.push(n.ident.clone());
     }

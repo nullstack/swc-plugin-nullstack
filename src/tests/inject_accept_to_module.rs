@@ -49,3 +49,29 @@ test!(
         class Component2 {}; 
         $runtime.accept(module, "/src/Application.njs", {klasses: [Component, Component2], dependencies: ["nullstack", "nullstack/logo"]})"#
 );
+
+test!(
+    syntax(),
+    |_| tr(InjectAcceptVisitor::new("/src/Application.njs".into())),
+    inject_accept_when_exporting_as_named,
+    r#"
+        export class Component {};
+    "#,
+    r#"
+        export class Component {};
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: []})
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectAcceptVisitor::new("/src/Application.njs".into())),
+    inject_accept_when_exporting_as_default,
+    r#"
+        export default class Component {};
+    "#,
+    r#"
+        export default class Component {};
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: []})
+    "#
+);
