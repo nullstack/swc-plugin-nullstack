@@ -1,47 +1,57 @@
 use std::borrow::BorrowMut;
+use swc_common::Span;
 use swc_core::ecma::{
     ast::*,
+    atoms::JsWord,
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
+use tracing::info;
 
 #[derive(Default)]
 pub struct InjectInnerComponentVisitor {
-    outter_idents: Vec<Ident>,
-    inner_idents: Vec<Ident>,
-    inner_tags: Vec<Ident>,
+    outter_idents: Vec<JsWord>,
+    inner_idents: Vec<JsWord>,
+    inner_tags: Vec<JsWord>,
     is_inside_class: bool,
     is_inside_method: bool,
     is_inside_tag: bool,
+    current_span: Option<Span>,
 }
 
-fn inject_constant(ident: &Ident) -> Stmt {
-    let mut render_ident = ident.clone();
-    render_ident.sym = format!("render{}", ident.sym).into();
+fn inject_constant(constant_name: &JsWord, span: &Span) -> Stmt {
+    let function_name = format!("render{}", constant_name);
     Stmt::Decl(Decl::Var(Box::new(VarDecl {
-        span: ident.span,
+        span: *span,
         kind: VarDeclKind::Const,
         declare: false,
         decls: vec![VarDeclarator {
-            span: ident.span,
+            span: *span,
             name: Pat::Ident(BindingIdent {
-                id: ident.clone(),
+                id: Ident {
+                    span: *span,
+                    sym: constant_name.clone(),
+                    optional: false,
+                },
                 type_ann: None,
             }),
             init: Some(Box::new(Expr::Member(MemberExpr {
-                span: ident.span,
-                obj: Box::new(Expr::This(ThisExpr { span: ident.span })),
-                prop: MemberProp::Ident(render_ident),
+                span: *span,
+                obj: Box::new(Expr::This(ThisExpr { span: *span })),
+                prop: MemberProp::Ident(Ident {
+                    span: *span,
+                    sym: JsWord::from(function_name),
+                    optional: false,
+                }),
             }))),
             definite: false,
         }],
     })))
 }
 
-fn push_if_uppercase(vec: &mut Vec<Ident>, ident: &Ident) {
-    if !vec.iter().any(|i| i.sym == ident.sym)
-        && ident.sym.chars().next().unwrap_or_default().is_uppercase()
-    {
-        vec.push(ident.clone());
+fn push_if_uppercase(vec: &mut Vec<JsWord>, sym: &JsWord) {
+    info!("SYM: {:#?}", sym.clone());
+    if sym.chars().next().unwrap_or_default().is_uppercase() && !vec.iter().any(|s| *s == *sym) {
+        vec.push(sym.clone());
     }
 }
 
@@ -50,17 +60,18 @@ impl VisitMut for InjectInnerComponentVisitor {
 
     fn visit_mut_ident(&mut self, n: &mut Ident) {
         if !self.is_inside_class {
-            push_if_uppercase(&mut self.outter_idents, n);
+            push_if_uppercase(&mut self.outter_idents, &n.sym);
         } else if self.is_inside_tag {
-            push_if_uppercase(&mut self.inner_tags, n);
+            push_if_uppercase(&mut self.inner_tags, &n.sym);
+            self.current_span = Some(n.span);
         } else if self.is_inside_method {
-            push_if_uppercase(&mut self.inner_idents, n);
+            push_if_uppercase(&mut self.inner_idents, &n.sym);
         }
     }
 
     fn visit_mut_class_expr(&mut self, n: &mut ClassExpr) {
         if let Some(ident) = &n.ident {
-            push_if_uppercase(&mut self.outter_idents, ident);
+            push_if_uppercase(&mut self.outter_idents, &ident.sym);
         }
         self.is_inside_class = true;
         n.visit_mut_children_with(self);
@@ -68,7 +79,7 @@ impl VisitMut for InjectInnerComponentVisitor {
     }
 
     fn visit_mut_class_decl(&mut self, n: &mut ClassDecl) {
-        push_if_uppercase(&mut self.outter_idents, &n.ident);
+        push_if_uppercase(&mut self.outter_idents, &n.ident.sym);
         self.is_inside_class = true;
         n.visit_mut_children_with(self);
         self.is_inside_class = false;
@@ -81,11 +92,13 @@ impl VisitMut for InjectInnerComponentVisitor {
                 n.function.visit_mut_children_with(self);
                 self.is_inside_method = false;
                 for inner_tag in self.inner_tags.iter() {
-                    if !self.outter_idents.iter().any(|i| i.sym == inner_tag.sym)
-                        && !self.inner_idents.iter().any(|i| i.sym == inner_tag.sym)
+                    if !self.outter_idents.iter().any(|s| *s == *inner_tag)
+                        && !self.inner_idents.iter().any(|s| *s == *inner_tag)
                     {
                         if let Some(body) = n.function.body.borrow_mut() {
-                            body.stmts.insert(0, inject_constant(inner_tag));
+                            if let Some(span) = self.current_span {
+                                body.stmts.insert(0, inject_constant(inner_tag, &span));
+                            }
                         }
                     }
                 }

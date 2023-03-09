@@ -7,7 +7,7 @@ use swc_core::ecma::{
 
 #[derive(Default)]
 pub struct InjectAcceptVisitor {
-    class_names: Vec<Ident>,
+    class_names: Vec<JsWord>,
     import_paths: Vec<JsWord>,
     file_path: String,
 }
@@ -21,7 +21,7 @@ impl InjectAcceptVisitor {
     }
 }
 
-fn runtime_accept(class_names: &[Ident], import_paths: &[JsWord], file_path: &str) -> ModuleItem {
+fn runtime_accept(class_names: &[JsWord], import_paths: &[JsWord], file_path: &str) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
         expr: Box::new(Expr::Call(CallExpr {
@@ -74,7 +74,11 @@ fn runtime_accept(class_names: &[Ident], import_paths: &[JsWord], file_path: &st
                                         .map(|class_name| {
                                             Some(ExprOrSpread {
                                                 spread: None,
-                                                expr: Box::new(Expr::Ident(class_name.clone())),
+                                                expr: Box::new(Expr::Ident(Ident {
+                                                    span: DUMMY_SP,
+                                                    sym: class_name.clone(),
+                                                    optional: false,
+                                                })),
                                             })
                                         })
                                         .collect(),
@@ -130,11 +134,11 @@ impl VisitMut for InjectAcceptVisitor {
 
     fn visit_mut_class_expr(&mut self, n: &mut ClassExpr) {
         if let Some(ident) = &n.ident {
-            self.class_names.push(ident.clone());
+            self.class_names.push(ident.sym.clone());
         }
     }
 
     fn visit_mut_class_decl(&mut self, n: &mut ClassDecl) {
-        self.class_names.push(n.ident.clone());
+        self.class_names.push(n.ident.sym.clone());
     }
 }
