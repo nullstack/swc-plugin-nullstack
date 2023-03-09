@@ -414,3 +414,26 @@ test!(
         }
     "#
 );
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    inject_inner_components_when_mixed_scopes,
+    r#"
+        import OutterComponent from '../icons/Down'
+        class Component {
+            render() {
+                return <><OutterComponent /><InnerComponent /><OutterComponent /></>
+            }
+        }
+    "#,
+    r#"
+        import OutterComponent from '../icons/Down'
+        class Component {
+            render() {
+                const InnerComponent = this.renderInnerComponent
+                return <><OutterComponent /><InnerComponent /><OutterComponent /></>
+            }
+        }
+    "#
+);
