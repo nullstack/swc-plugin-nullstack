@@ -58,12 +58,49 @@ fn push_if_uppercase(vec: &mut Vec<JsWord>, sym: &JsWord) {
 impl VisitMut for InjectInnerComponentVisitor {
     noop_visit_mut_type!();
 
+    fn visit_mut_module_item(&mut self, n: &mut ModuleItem) {
+        match n {
+            ModuleItem::ModuleDecl(decl) => match decl {
+                ModuleDecl::Import(i) => {
+                    for specifier in i.specifiers.iter() {
+                        match specifier {
+                            ImportSpecifier::Named(s) => {
+                                push_if_uppercase(&mut self.outter_idents, &s.local.sym)
+                            }
+                            ImportSpecifier::Default(s) => {
+                                push_if_uppercase(&mut self.outter_idents, &s.local.sym)
+                            }
+                            ImportSpecifier::Namespace(s) => {
+                                push_if_uppercase(&mut self.outter_idents, &s.local.sym)
+                            }
+                        }
+                    }
+                }
+                other => other.visit_mut_children_with(self),
+            },
+            ModuleItem::Stmt(stmt) => match stmt {
+                Stmt::Decl(d) => match d {
+                    Decl::Var(v) => {
+                        for decl in v.decls.iter() {
+                            if let Pat::Ident(ident) = &decl.name {
+                                push_if_uppercase(&mut self.outter_idents, &ident.sym)
+                            }
+                        }
+                    }
+                    Decl::Fn(f) => push_if_uppercase(&mut self.outter_idents, &f.ident.sym),
+                    other => other.visit_mut_children_with(self),
+                },
+                other => other.visit_mut_children_with(self),
+            },
+        }
+    }
+
     fn visit_mut_ident(&mut self, n: &mut Ident) {
         if !self.is_inside_class {
             push_if_uppercase(&mut self.outter_idents, &n.sym);
         } else if self.is_inside_tag {
-            if !self.outter_idents.iter().any(|s| *s == *&n.sym)
-                && !self.inner_idents.iter().any(|s| *s == *&n.sym)
+            if !self.outter_idents.iter().any(|s| *s == n.sym)
+                && !self.inner_idents.iter().any(|s| *s == n.sym)
             {
                 push_if_uppercase(&mut self.inner_tags, &n.sym);
                 self.current_span = Some(n.span);

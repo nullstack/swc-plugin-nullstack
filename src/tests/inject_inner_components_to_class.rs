@@ -113,6 +113,94 @@ test!(
 test!(
     syntax(),
     |_| tr(InjectInnerComponentVisitor::default()),
+    skip_inject_import_default,
+    r#"
+        import InnerComponent from 'inner'
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#,
+    r#"
+        import InnerComponent from 'inner'
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    skip_inject_import_named,
+    r#"
+        import { InnerComponent } from 'inner'
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#,
+    r#"
+        import { InnerComponent } from 'inner'
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    skip_inject_import_named_as_local,
+    r#"
+        import { other as InnerComponent } from 'inner'
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#,
+    r#"
+        import { other as InnerComponent } from 'inner'
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    skip_inject_import_namespace,
+    r#"
+        import * as InnerComponent from 'inner'
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#,
+    r#"
+        import * as InnerComponent from 'inner'
+        class Component {
+            render() {
+                return <InnerComponent />;
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
     inject_inner_components,
     r#"
         class Component {
@@ -420,7 +508,7 @@ test!(
     |_| tr(InjectInnerComponentVisitor::default()),
     inject_inner_components_when_mixed_scopes,
     r#"
-        import OutterComponent from '../icons/Down'
+        import OutterComponent from 'outter'
         class Component {
             render() {
                 return <><OutterComponent /><InnerComponent /><OutterComponent /></>
@@ -428,11 +516,34 @@ test!(
         }
     "#,
     r#"
-        import OutterComponent from '../icons/Down'
+        import OutterComponent from 'outter'
         class Component {
             render() {
                 const InnerComponent = this.renderInnerComponent
                 return <><OutterComponent /><InnerComponent /><OutterComponent /></>
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    inject_inner_components_when_nested_top_level_conflict,
+    r#"
+        const object = {InnerComponent: true}
+        class Component {
+            render() {
+                return <><InnerComponent /></>
+            }
+        }
+    "#,
+    r#"
+        const object = {InnerComponent: true}
+        class Component {
+            render() {
+                const InnerComponent = this.renderInnerComponent
+                return <><InnerComponent /></>
             }
         }
     "#
