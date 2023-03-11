@@ -13,7 +13,7 @@ test!(
     "#,
     r#"
         class Component {};
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: []})
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: [], initiate: ""})
     "#
 );
 
@@ -22,13 +22,13 @@ test!(
     |_| tr(InjectAcceptVisitor::new("/src/Application.njs".into())),
     inject_multiple_accept,
     r#"
-        class Component {}; 
+        class Component {};
         class Component2 {};
     "#,
     r#"
-        class Component {}; 
-        class Component2 {}; 
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component, Component2], dependencies: []})
+        class Component {};
+        class Component2 {};
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component, Component2], dependencies: [], initiate: ""})
     "#
 );
 
@@ -37,17 +37,17 @@ test!(
     |_| tr(InjectAcceptVisitor::new("/src/Application.njs".into())),
     inject_multiple_imports,
     r#"
-        import Nullstack from 'nullstack'; 
-        import Logo from 'nullstack/logo'; 
-        class Component {}; 
+        import Nullstack from 'nullstack';
+        import Logo from 'nullstack/logo';
+        class Component {};
         class Component2 {};
     "#,
     r#"
-        import Nullstack from 'nullstack'; 
-        import Logo from 'nullstack/logo'; 
-        class Component {}; 
-        class Component2 {}; 
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component, Component2], dependencies: ["nullstack", "nullstack/logo"]})"#
+        import Nullstack from 'nullstack';
+        import Logo from 'nullstack/logo';
+        class Component {};
+        class Component2 {};
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component, Component2], dependencies: ["nullstack", "nullstack/logo"], initiate: ""})"#
 );
 
 test!(
@@ -59,7 +59,7 @@ test!(
     "#,
     r#"
         export class Component {};
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: []})
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: [], initiate: ""})
     "#
 );
 
@@ -72,6 +72,41 @@ test!(
     "#,
     r#"
         export default class Component {};
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: []})
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: [], initiate: ""})
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectAcceptVisitor::new("/src/Application.njs".into())),
+    inject_accept_with_initiate_hash,
+    r#"
+        class Component {
+            static async initiateDep({ lorem }) {
+                if (lorem) {
+                    return "ipsum"
+                }
+                return false
+            }
+
+            initiate() {
+                this.initiateDep({ lorem: true })
+            }
+        };
+    "#,
+    r#"
+        class Component {
+            static async initiateDep({ lorem }) {
+                if (lorem) {
+                    return "ipsum"
+                }
+                return false
+            }
+
+            initiate() {
+                this.initiateDep({ lorem: true })
+            }
+        };
+        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: [], initiate: "56c841b87474b72cb79a6a32922f5de8"})
     "#
 );

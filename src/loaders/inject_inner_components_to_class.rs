@@ -5,7 +5,6 @@ use swc_core::ecma::{
     atoms::JsWord,
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
-use tracing::info;
 
 #[derive(Default)]
 pub struct InjectInnerComponentVisitor {
@@ -49,7 +48,6 @@ fn inject_constant(constant_name: &JsWord, span: &Span) -> Stmt {
 }
 
 fn push_if_uppercase(vec: &mut Vec<JsWord>, sym: &JsWord) {
-    info!("SYM: {:#?}", sym.clone());
     if sym.chars().next().unwrap_or_default().is_uppercase() && !vec.iter().any(|s| *s == *sym) {
         vec.push(sym.clone());
     }
