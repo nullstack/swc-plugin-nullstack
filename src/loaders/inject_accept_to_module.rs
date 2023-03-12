@@ -21,12 +21,14 @@ pub struct InjectAcceptVisitor {
     classes: HashMap<JsWord, Class>,
     current_server_function: Option<JsWord>,
     current_class: Option<JsWord>,
+    is_client: bool,
 }
 
 impl InjectAcceptVisitor {
-    pub fn new(file_path: String) -> Self {
+    pub fn new(file_path: String, is_client: bool) -> Self {
         InjectAcceptVisitor {
             file_path,
+            is_client,
             ..Default::default()
         }
     }
@@ -45,11 +47,103 @@ fn get_hash(class: &mut Class) -> JsWord {
     format!("{:?}", md5::compute(initiate_hash.clone())).into()
 }
 
-fn runtime_accept(
-    classes: &mut HashMap<JsWord, Class>,
-    import_paths: &[JsWord],
-    file_path: &str,
-) -> ModuleItem {
+fn runtime_accept_args(
+    classes: &mut Option<&mut HashMap<JsWord, Class>>,
+    import_paths: Option<&[JsWord]>,
+    file_path: Option<&str>,
+) -> Vec<ExprOrSpread> {
+    let mut args = vec![ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: "module".into(),
+            optional: false,
+        })),
+    }];
+    if let Some(file_path) = file_path {
+        args.push(ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: file_path.into(),
+                raw: None,
+            }))),
+        })
+    }
+    if let Some(import_paths) = import_paths {
+        args.push(ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: import_paths
+                    .iter()
+                    .map(|import_path| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(Expr::Lit(Lit::Str(Str {
+                                span: DUMMY_SP,
+                                value: import_path.clone(),
+                                raw: None,
+                            }))),
+                        })
+                    })
+                    .collect(),
+            })),
+        });
+        if let Some(classes) = classes {
+            args.push(ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: classes
+                        .iter_mut()
+                        .map(|(name, class)| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: Box::new(Expr::Object(ObjectLit {
+                                    span: DUMMY_SP,
+                                    props: vec![
+                                        PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                                            KeyValueProp {
+                                                key: PropName::Ident(Ident {
+                                                    span: DUMMY_SP,
+                                                    sym: "klass".into(),
+                                                    optional: false,
+                                                }),
+                                                value: Box::new(Expr::Ident(Ident {
+                                                    span: DUMMY_SP,
+                                                    sym: name.clone(),
+                                                    optional: false,
+                                                })),
+                                            },
+                                        ))),
+                                        PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                                            KeyValueProp {
+                                                key: PropName::Ident(Ident {
+                                                    span: DUMMY_SP,
+                                                    sym: "initiate".into(),
+                                                    optional: false,
+                                                }),
+                                                value: Box::new(Expr::Lit(Lit::Str(Str {
+                                                    span: DUMMY_SP,
+                                                    value: get_hash(class),
+                                                    raw: None,
+                                                }))),
+                                            },
+                                        ))),
+                                    ],
+                                })),
+                            })
+                        })
+                        .collect(),
+                })),
+            });
+        }
+    }
+    args
+}
+
+fn runtime_accept(args: Vec<ExprOrSpread>) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
         expr: Box::new(Expr::Call(CallExpr {
@@ -67,90 +161,7 @@ fn runtime_accept(
                     optional: false,
                 }),
             }))),
-            args: vec![
-                ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(Expr::Ident(Ident {
-                        span: DUMMY_SP,
-                        sym: "module".into(),
-                        optional: false,
-                    })),
-                },
-                ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(Expr::Lit(Lit::Str(Str {
-                        span: DUMMY_SP,
-                        value: file_path.into(),
-                        raw: None,
-                    }))),
-                },
-                ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(Expr::Array(ArrayLit {
-                        span: DUMMY_SP,
-                        elems: import_paths
-                            .iter()
-                            .map(|import_path| {
-                                Some(ExprOrSpread {
-                                    spread: None,
-                                    expr: Box::new(Expr::Lit(Lit::Str(Str {
-                                        span: DUMMY_SP,
-                                        value: import_path.clone(),
-                                        raw: None,
-                                    }))),
-                                })
-                            })
-                            .collect(),
-                    })),
-                },
-                ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(Expr::Array(ArrayLit {
-                        span: DUMMY_SP,
-                        elems: classes
-                            .iter_mut()
-                            .map(|(name, class)| {
-                                Some(ExprOrSpread {
-                                    spread: None,
-                                    expr: Box::new(Expr::Object(ObjectLit {
-                                        span: DUMMY_SP,
-                                        props: vec![
-                                            PropOrSpread::Prop(Box::new(Prop::KeyValue(
-                                                KeyValueProp {
-                                                    key: PropName::Ident(Ident {
-                                                        span: DUMMY_SP,
-                                                        sym: "klass".into(),
-                                                        optional: false,
-                                                    }),
-                                                    value: Box::new(Expr::Ident(Ident {
-                                                        span: DUMMY_SP,
-                                                        sym: name.clone(),
-                                                        optional: false,
-                                                    })),
-                                                },
-                                            ))),
-                                            PropOrSpread::Prop(Box::new(Prop::KeyValue(
-                                                KeyValueProp {
-                                                    key: PropName::Ident(Ident {
-                                                        span: DUMMY_SP,
-                                                        sym: "initiate".into(),
-                                                        optional: false,
-                                                    }),
-                                                    value: Box::new(Expr::Lit(Lit::Str(Str {
-                                                        span: DUMMY_SP,
-                                                        value: get_hash(class),
-                                                        raw: None,
-                                                    }))),
-                                                },
-                                            ))),
-                                        ],
-                                    })),
-                                })
-                            })
-                            .collect(),
-                    })),
-                },
-            ],
+            args,
             type_args: None,
         })),
     }))
@@ -161,11 +172,16 @@ impl VisitMut for InjectAcceptVisitor {
 
     fn visit_mut_module(&mut self, n: &mut Module) {
         n.visit_mut_children_with(self);
-        n.body.push(runtime_accept(
-            &mut self.classes,
-            &self.import_paths,
-            &self.file_path,
-        ));
+        let args = if self.is_client {
+            runtime_accept_args(
+                &mut Some(&mut self.classes),
+                Some(&self.import_paths),
+                Some(&self.file_path),
+            )
+        } else {
+            runtime_accept_args(&mut None, None, None)
+        };
+        n.body.push(runtime_accept(args));
     }
 
     fn visit_mut_class_member(&mut self, n: &mut ClassMember) {
