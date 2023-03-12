@@ -12,7 +12,7 @@ pub struct InjectRestartVisitor {
     starter_path: Option<JsWord>,
 }
 
-fn runtime_restart(starter_path: &JsWord) -> ModuleItem {
+fn runtime_restart(starter_path: &JsWord, starter: &JsWord) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
         expr: Box::new(Expr::Call(CallExpr {
@@ -47,6 +47,14 @@ fn runtime_restart(starter_path: &JsWord) -> ModuleItem {
                         raw: None,
                     }))),
                 },
+                ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: starter.into(),
+                        optional: false,
+                    })),
+                },
             ],
             type_args: None,
         })),
@@ -64,7 +72,9 @@ impl VisitMut for InjectRestartVisitor {
         // find application path
         n.visit_mut_children_with(self);
         if let Some(starter_path) = &self.starter_path {
-            n.body.push(runtime_restart(starter_path));
+            if let Some(starter) = &self.starter {
+                n.body.push(runtime_restart(starter_path, starter));
+            }
         }
     }
 

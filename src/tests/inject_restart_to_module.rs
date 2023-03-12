@@ -17,7 +17,7 @@ test!(
         import Nullstack from 'nullstack';
         import Application from './src/Application';
         const context = Nullstack.start(Application);
-        $runtime.restart(module, "./src/Application");
+        $runtime.restart(module, "./src/Application", Application);
     "#
 );
 
@@ -34,7 +34,7 @@ test!(
         import Nadegas from 'nullstack';
         import Application from './src/Application';
         const context = Nadegas.start(Application);
-        $runtime.restart(module, "./src/Application");
+        $runtime.restart(module, "./src/Application", Application);
     "#
 );
 
@@ -51,6 +51,6 @@ test!(
         import Nullstack from 'nullstack';
         import { Blog } from './src/Blog';
         const context = Nullstack.start(Blog);
-        $runtime.restart(module, "./src/Blog");
+        $runtime.restart(module, "./src/Blog", Blog);
     "#
 );
