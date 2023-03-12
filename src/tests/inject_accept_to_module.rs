@@ -13,7 +13,7 @@ test!(
     "#,
     r#"
         class Component {};
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: [], initiate: ""})
+        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: ""}])
     "#
 );
 
@@ -28,7 +28,7 @@ test!(
     r#"
         class Component {};
         class Component2 {};
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component, Component2], dependencies: [], initiate: ""})
+        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: ""}, {klass: Component2, initiate: ""}])
     "#
 );
 
@@ -47,7 +47,8 @@ test!(
         import Logo from 'nullstack/logo';
         class Component {};
         class Component2 {};
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component, Component2], dependencies: ["nullstack", "nullstack/logo"], initiate: ""})"#
+        $runtime.accept(module, "/src/Application.njs", ["nullstack", "nullstack/logo"], [{klass: Component, initiate: ""}, {klass: Component2, initiate: ""}])
+    "#
 );
 
 test!(
@@ -59,7 +60,7 @@ test!(
     "#,
     r#"
         export class Component {};
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: [], initiate: ""})
+        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: ""}])
     "#
 );
 
@@ -72,7 +73,7 @@ test!(
     "#,
     r#"
         export default class Component {};
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: [], initiate: ""})
+        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: ""}])
     "#
 );
 
@@ -107,6 +108,6 @@ test!(
                 this.initiateDep({ lorem: true })
             }
         };
-        $runtime.accept(module, "/src/Application.njs", {klasses: [Component], dependencies: [], initiate: "56c841b87474b72cb79a6a32922f5de8"})
+        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: "56c841b87474b72cb79a6a32922f5de8"}])
     "#
 );
