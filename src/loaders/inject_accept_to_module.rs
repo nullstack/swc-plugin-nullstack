@@ -32,17 +32,50 @@ impl InjectAcceptVisitor {
     }
 }
 
-fn get_hash(class: &mut Class) -> JsWord {
-    let mut initiate_hash = vec![];
-    for (key, value) in class.server_function_bytes.iter_mut() {
-        if class.initiate_dependencies.iter().any(|dep| dep == key) {
-            initiate_hash.append(value);
-        }
-    }
-    if initiate_hash.is_empty() {
-        return JsWord::default();
-    }
-    format!("{:?}", md5::compute(initiate_hash.clone())).into()
+fn get_deps(class: &mut Class) -> Vec<Option<ExprOrSpread>> {
+    class
+        .initiate_dependencies
+        .retain(|dep| class.server_function_bytes.contains_key(dep));
+    class
+        .initiate_dependencies
+        .iter()
+        .map(|dep| {
+            Some(ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: dep.clone(),
+                    raw: None,
+                }))),
+            })
+        })
+        .collect()
+}
+
+fn get_hashes(class: &mut Class) -> Vec<PropOrSpread> {
+    class
+        .server_function_bytes
+        .iter()
+        .map(|(key, value)| {
+            let hash = if value.is_empty() {
+                JsWord::default()
+            } else {
+                format!("{:?}", md5::compute(value.clone())).into()
+            };
+            PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                key: PropName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: key.clone(),
+                    optional: false,
+                }),
+                value: Box::new(Expr::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: hash,
+                    raw: None,
+                }))),
+            })))
+        })
+        .collect()
 }
 
 fn runtime_accept_args(
@@ -122,11 +155,23 @@ fn runtime_accept_args(
                                                     sym: "initiate".into(),
                                                     optional: false,
                                                 }),
-                                                value: Box::new(Expr::Lit(Lit::Str(Str {
+                                                value: Box::new(Expr::Array(ArrayLit {
                                                     span: DUMMY_SP,
-                                                    value: get_hash(class),
-                                                    raw: None,
-                                                }))),
+                                                    elems: get_deps(class),
+                                                })),
+                                            },
+                                        ))),
+                                        PropOrSpread::Prop(Box::new(Prop::KeyValue(
+                                            KeyValueProp {
+                                                key: PropName::Ident(Ident {
+                                                    span: DUMMY_SP,
+                                                    sym: "hashes".into(),
+                                                    optional: false,
+                                                }),
+                                                value: Box::new(Expr::Object(ObjectLit {
+                                                    span: DUMMY_SP,
+                                                    props: get_hashes(class),
+                                                })),
                                             },
                                         ))),
                                     ],

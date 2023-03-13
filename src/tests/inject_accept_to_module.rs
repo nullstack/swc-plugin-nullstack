@@ -13,7 +13,7 @@ test!(
     "#,
     r#"
         class Component {};
-        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: ""}])
+        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: [], hashes: {}}])
     "#
 );
 
@@ -28,7 +28,23 @@ test!(
     r#"
         class Component {};
         class Component2 {};
-        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: ""}, {klass: Component2, initiate: ""}])
+        $runtime.accept(
+            module, 
+            "/src/Application.njs", 
+            [], 
+            [
+                {
+                    klass: Component, 
+                    initiate: [], 
+                    hashes: {}
+                },
+                {
+                    klass: Component2, 
+                    initiate: [], 
+                    hashes: {}
+                }
+            ]
+        )
     "#
 );
 
@@ -47,7 +63,23 @@ test!(
         import Logo from 'nullstack/logo';
         class Component {};
         class Component2 {};
-        $runtime.accept(module, "/src/Application.njs", ["nullstack", "nullstack/logo"], [{klass: Component2, initiate: ""}, {klass: Component, initiate: ""}])
+        $runtime.accept(
+            module, 
+            "/src/Application.njs", 
+            ["nullstack", "nullstack/logo"], 
+            [
+                {
+                    klass: Component, 
+                    initiate: [], 
+                    hashes: {}
+                },
+                {
+                    klass: Component2, 
+                    initiate: [], 
+                    hashes: {}
+                }
+            ]
+        )
     "#
 );
 
@@ -60,7 +92,7 @@ test!(
     "#,
     r#"
         export class Component {};
-        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: ""}])
+        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: [], hashes: {}}])
     "#
 );
 
@@ -73,7 +105,7 @@ test!(
     "#,
     r#"
         export default class Component {};
-        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: ""}])
+        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: [], hashes: {}}])
     "#
 );
 
@@ -82,7 +114,12 @@ test!(
     |_| tr(InjectAcceptVisitor::new("/src/Application.njs".into())),
     inject_accept_with_initiate_hash,
     r#"
+        import Nullstack from 'nullstack';
         class Component {
+            static async notDep() {
+                return false
+            }
+
             static async initiateDep({ lorem }) {
                 if (lorem) {
                     return "ipsum"
@@ -96,7 +133,12 @@ test!(
         };
     "#,
     r#"
+        import Nullstack from 'nullstack';
         class Component {
+            static async notDep() {
+                return false
+            }
+
             static async initiateDep({ lorem }) {
                 if (lorem) {
                     return "ipsum"
@@ -108,6 +150,19 @@ test!(
                 this.initiateDep({ lorem: true })
             }
         };
-        $runtime.accept(module, "/src/Application.njs", [], [{klass: Component, initiate: "56c841b87474b72cb79a6a32922f5de8"}])
+        $runtime.accept(
+            module, 
+            "/src/Application.njs", 
+            ["nullstack"], 
+            [
+                {
+                    klass: Component, 
+                    initiate: ["initiateDep"], 
+                    hashes: {
+                        initiateDep: "56c841b87474b72cb79a6a32922f5de8", notDep: "7ab9830589d0014e814e00c4674c5ff9"
+                    }
+                }
+            ]
+        )
     "#
 );
