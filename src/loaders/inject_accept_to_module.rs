@@ -21,14 +21,12 @@ pub struct InjectAcceptVisitor {
     classes: HashMap<JsWord, Class>,
     current_server_function: Option<JsWord>,
     current_class: Option<JsWord>,
-    is_client: bool,
 }
 
 impl InjectAcceptVisitor {
-    pub fn new(file_path: String, is_client: bool) -> Self {
+    pub fn new(file_path: String) -> Self {
         InjectAcceptVisitor {
             file_path,
-            is_client,
             ..Default::default()
         }
     }
@@ -172,16 +170,11 @@ impl VisitMut for InjectAcceptVisitor {
 
     fn visit_mut_module(&mut self, n: &mut Module) {
         n.visit_mut_children_with(self);
-        let args = if self.is_client {
-            runtime_accept_args(
-                &mut Some(&mut self.classes),
-                Some(&self.import_paths),
-                Some(&self.file_path),
-            )
-        } else {
-            runtime_accept_args(&mut None, None, None)
-        };
-        n.body.push(runtime_accept(args));
+        n.body.push(runtime_accept(runtime_accept_args(
+            &mut Some(&mut self.classes),
+            Some(&self.import_paths),
+            Some(&self.file_path),
+        )));
     }
 
     fn visit_mut_class_member(&mut self, n: &mut ClassMember) {

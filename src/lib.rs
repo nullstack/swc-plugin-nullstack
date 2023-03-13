@@ -50,10 +50,7 @@ pub fn process_transform(
 
     if config.template {
         if config.development {
-            program.visit_mut_with(&mut InjectAcceptVisitor::new(
-                file_path.clone(),
-                config.client,
-            ));
+            program.visit_mut_with(&mut InjectAcceptVisitor::new(file_path.clone()));
         }
         program.visit_mut_with(&mut ReplaceRefVisitor::default());
         program.visit_mut_with(&mut InjectSourceVisitor::default());
