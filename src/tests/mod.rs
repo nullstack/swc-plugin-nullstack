@@ -7,6 +7,7 @@ pub mod inject_source_to_events;
 pub mod register_server_functions_on_server;
 pub mod remove_styles_on_server;
 pub mod remove_unused_from_client;
+pub mod replace_lazy_on_module;
 pub mod replace_ref_on_attributes;
 pub mod replace_server_functions_on_client;
 

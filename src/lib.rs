@@ -6,7 +6,7 @@ use loaders::{
     inject_source_to_events::InjectSourceVisitor,
     register_server_functions_on_server::RegisterServerFunctionVisitor,
     remove_styles_on_server::RemoveStylesVisitor, remove_unused_from_client::RemoveUnusedVisitor,
-    replace_ref_on_attributes::ReplaceRefVisitor,
+    replace_lazy_on_module::ReplaceLazyVisitor, replace_ref_on_attributes::ReplaceRefVisitor,
     replace_server_functions_on_client::ReplaceServerFunctionVisitor,
 };
 use swc_common::plugin::metadata::TransformPluginMetadataContextKind;
@@ -51,6 +51,11 @@ pub fn process_transform(
     if config.template {
         if config.development {
             program.visit_mut_with(&mut InjectAcceptVisitor::new(file_path.clone()));
+            // for now its never used in prod
+            program.visit_mut_with(&mut ReplaceLazyVisitor::new(
+                file_path.clone(),
+                config.development,
+            ));
         }
         program.visit_mut_with(&mut ReplaceRefVisitor::default());
         program.visit_mut_with(&mut InjectSourceVisitor::default());
