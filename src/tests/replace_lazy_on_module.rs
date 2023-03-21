@@ -93,3 +93,36 @@ test!(
          };
     "#
 );
+
+test!(
+    syntax(),
+    |_| tr(ReplaceLazyVisitor::new(
+        "src/nested/Application.njs".into(),
+        true
+    )),
+    replace_lazy_when_nested_urls,
+    r#"
+        import LazyComponent from './LazyComponent';
+        import OtherComponent from './OtherComponent';
+        class Component extends Nullstack {
+            render() {
+                <div>
+                    <OtherComponent />
+                    <LazyComponent />
+                </div>
+            }
+         };
+    "#,
+    r#"
+        const LazyComponent = $runtime.lazy("src__nested__LazyComponent", () => import("./LazyComponent"));
+        const OtherComponent = $runtime.lazy("src__nested__OtherComponent", () => import("./OtherComponent"));
+        class Component extends Nullstack {
+            render() {
+                <div>
+                    <OtherComponent />
+                    <LazyComponent />
+                </div>
+            }
+        };
+    "#
+);
