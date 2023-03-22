@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::PathBuf;
 use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
@@ -104,18 +104,19 @@ impl ReplaceLazyVisitor {
 }
 
 fn resolve_path<'a>(current_path: &'a str, target_path: &'a str) -> String {
-    let current_path = Path::new(current_path);
-    let mut new_path = current_path.to_path_buf();
-    for component in target_path.split('/') {
+    let mut resolved_path = PathBuf::from(current_path.replace("\\", "/"));
+    for component in target_path.replace("\\", "/").split('/') {
+        println!("{}", component);
         if component == "." {
-            new_path = new_path.parent().unwrap().to_path_buf();
+            resolved_path.pop();
         } else if component == ".." {
-            new_path = new_path.parent().unwrap().parent().unwrap().to_path_buf();
+            resolved_path.pop();
+            resolved_path.pop();
         } else {
-            new_path = new_path.join(component);
+            resolved_path.push(component);
         }
     }
-    new_path.to_str().unwrap().to_string()
+    resolved_path.display().to_string()
 }
 
 impl VisitMut for ReplaceLazyVisitor {
@@ -141,22 +142,17 @@ impl VisitMut for ReplaceLazyVisitor {
         n.visit_mut_children_with(self);
         self.completed_lookup = true;
         info!("\n\n\n SELF: {:#?} \n\n\n", self);
-        // for (index, statement) in n.body.iter_mut().enumerate() {
-        //     if index > self.module_statements.len() {
-        //         statement.visit_mut_children_with(self);
-        //     }
-        // }
-        let last_import_index = self.module_statements.len();
+        let mut insert_index = self.module_statements.len();
         for (index, statement) in self.module_statements.iter_mut().enumerate() {
             if let Some(constant_name) = &statement {
                 if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = n.body[index].clone() {
                     let resolved_path = resolve_path(&self.file_path, &import.src.value);
                     let file_hash = hash(&resolved_path, self.is_dev);
-                    info!("\n\n\n import_path: {} {} \n\n\n", resolved_path, file_hash);
                     n.body.insert(
-                        last_import_index + index,
+                        insert_index,
                         lazy_import(constant_name, &file_hash.into(), &import.src.value),
-                    )
+                    );
+                    insert_index += 1;
                 }
             }
         }

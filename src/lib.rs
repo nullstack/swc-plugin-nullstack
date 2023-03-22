@@ -49,14 +49,16 @@ pub fn process_transform(
     file_path.remove(0);
 
     if config.template {
-        program.visit_mut_with(&mut InjectRuntimeVisitor::default());
+        // for now its never used in prod
         if config.development {
-            program.visit_mut_with(&mut InjectAcceptVisitor::new(file_path.clone()));
-            // for now its never used in prod
             program.visit_mut_with(&mut ReplaceLazyVisitor::new(
                 file_path.clone(),
                 config.development,
             ));
+        }
+        program.visit_mut_with(&mut InjectRuntimeVisitor::default());
+        if config.development {
+            program.visit_mut_with(&mut InjectAcceptVisitor::new(file_path.clone()));
         }
         program.visit_mut_with(&mut ReplaceRefVisitor::default());
         program.visit_mut_with(&mut InjectSourceVisitor::default());
