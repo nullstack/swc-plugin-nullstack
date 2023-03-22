@@ -5,7 +5,6 @@ use swc_core::ecma::{
     atoms::JsWord,
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
-use tracing::info;
 
 use super::hash;
 
@@ -104,8 +103,8 @@ impl ReplaceLazyVisitor {
 }
 
 fn resolve_path<'a>(current_path: &'a str, target_path: &'a str) -> String {
-    let mut resolved_path = PathBuf::from(current_path.replace("\\", "/"));
-    for component in target_path.replace("\\", "/").split('/') {
+    let mut resolved_path = PathBuf::from(current_path.replace('\\', "/"));
+    for component in target_path.replace('\\', "/").split('/') {
         println!("{}", component);
         if component == "." {
             resolved_path.pop();
@@ -125,7 +124,6 @@ impl VisitMut for ReplaceLazyVisitor {
     fn visit_mut_module(&mut self, n: &mut Module) {
         for item in n.body.iter() {
             if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = &item {
-                info!("\n\n\n ModuleDecl: {:#?} \n\n\n", self.module_statements);
                 if import.specifiers.len() == 1 {
                     for specifier in import.specifiers.clone().iter_mut() {
                         if let ImportSpecifier::Default(default) = specifier {
@@ -141,7 +139,6 @@ impl VisitMut for ReplaceLazyVisitor {
         }
         n.visit_mut_children_with(self);
         self.completed_lookup = true;
-        info!("\n\n\n SELF: {:#?} \n\n\n", self);
         let mut insert_index = self.module_statements.len();
         for (index, statement) in self.module_statements.iter_mut().enumerate() {
             if let Some(constant_name) = &statement {
