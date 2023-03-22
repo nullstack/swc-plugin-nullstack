@@ -93,3 +93,82 @@ test!(
          };
     "#
 );
+
+test!(
+    syntax(),
+    |_| tr(ReplaceLazyVisitor::new(
+        "src/nested/Application.njs".into(),
+        true
+    )),
+    replace_lazy_when_nested_urls,
+    r#"
+        import LazyComponent from './LazyComponent';
+        import OtherComponent from './OtherComponent';
+        class Component extends Nullstack {
+            render() {
+                <div>
+                    <OtherComponent />
+                    <LazyComponent />
+                </div>
+            }
+         };
+    "#,
+    r#"
+        const LazyComponent = $runtime.lazy("src__nested__LazyComponent", () => import("./LazyComponent"));
+        const OtherComponent = $runtime.lazy("src__nested__OtherComponent", () => import("./OtherComponent"));
+        class Component extends Nullstack {
+            render() {
+                <div>
+                    <OtherComponent />
+                    <LazyComponent />
+                </div>
+            }
+        };
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(ReplaceLazyVisitor::new("src\\Application.njs".into(), true)),
+    replace_lazy_on_windows,
+    r#"
+        import LazyComponent from './LazyComponent';
+        class Component extends Nullstack {
+            render() {
+                <LazyComponent />
+            }
+         };
+    "#,
+    r#"
+        const LazyComponent = $runtime.lazy("src__LazyComponent", () => import("./LazyComponent"));
+        class Component extends Nullstack {
+            render() {
+                <LazyComponent />
+            }
+         };
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(ReplaceLazyVisitor::new("src/Application.njs".into(), true)),
+    replace_lazy_when_skiping_non_jsx_import,
+    r#"
+        import Nullstack from "nullstack";
+        import LazyComponent from './LazyComponent';
+        class Component extends Nullstack {
+            render() {
+                <LazyComponent />
+            }
+         };
+    "#,
+    r#"
+        import Nullstack from "nullstack";
+        const LazyComponent = $runtime.lazy("src__LazyComponent", () => import("./LazyComponent"));
+        class Component extends Nullstack {
+            render() {
+                <LazyComponent />
+            }
+         };
+    "#
+);

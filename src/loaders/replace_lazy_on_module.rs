@@ -1,45 +1,39 @@
-use std::path::Path;
-use swc_common::Span;
+use std::path::PathBuf;
+use swc_common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
     atoms::JsWord,
     visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
 };
-use tracing::info;
 
 use super::hash;
 
-fn lazy_import(
-    constant_name: &JsWord,
-    file_hash: &JsWord,
-    import_path: &JsWord,
-    span: Span,
-) -> ModuleItem {
+fn lazy_import(constant_name: &JsWord, file_hash: &JsWord, import_path: &JsWord) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
-        span,
+        span: DUMMY_SP,
         kind: VarDeclKind::Const,
         declare: false,
         decls: vec![VarDeclarator {
-            span,
+            span: DUMMY_SP,
             name: Pat::Ident(BindingIdent {
                 id: Ident {
-                    span,
+                    span: DUMMY_SP,
                     sym: constant_name.clone(),
                     optional: false,
                 },
                 type_ann: None,
             }),
             init: Some(Box::new(Expr::Call(CallExpr {
-                span,
+                span: DUMMY_SP,
                 callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
-                    span,
+                    span: DUMMY_SP,
                     obj: Box::new(Expr::Ident(Ident {
-                        span,
+                        span: DUMMY_SP,
                         sym: "$runtime".into(),
                         optional: false,
                     })),
                     prop: MemberProp::Ident(Ident {
-                        span,
+                        span: DUMMY_SP,
                         sym: "lazy".into(),
                         optional: false,
                     }),
@@ -48,7 +42,7 @@ fn lazy_import(
                     ExprOrSpread {
                         spread: None,
                         expr: Box::new(Expr::Lit(Lit::Str(Str {
-                            span,
+                            span: DUMMY_SP,
                             value: file_hash.clone(),
                             raw: None,
                         }))),
@@ -56,19 +50,19 @@ fn lazy_import(
                     ExprOrSpread {
                         spread: None,
                         expr: Box::new(Expr::Arrow(ArrowExpr {
-                            span,
+                            span: DUMMY_SP,
                             params: vec![],
                             body: BlockStmtOrExpr::Expr(Box::new(Expr::Call(CallExpr {
-                                span,
+                                span: DUMMY_SP,
                                 callee: Callee::Expr(Box::new(Expr::Ident(Ident {
-                                    span,
+                                    span: DUMMY_SP,
                                     sym: "import".into(),
                                     optional: false,
                                 }))),
                                 args: vec![ExprOrSpread {
                                     spread: None,
                                     expr: Box::new(Expr::Lit(Lit::Str(Str {
-                                        span,
+                                        span: DUMMY_SP,
                                         value: import_path.clone(),
                                         raw: None,
                                     }))),
@@ -91,36 +85,36 @@ fn lazy_import(
 
 #[derive(Default, Debug)]
 pub struct ReplaceLazyVisitor {
-    span: Option<Span>,
     module_statements: Vec<Option<JsWord>>,
     is_dev: bool,
     file_path: String,
+    completed_lookup: bool,
 }
 
 impl ReplaceLazyVisitor {
     pub fn new(file_path: String, is_dev: bool) -> Self {
         ReplaceLazyVisitor {
-            span: None,
             module_statements: vec![],
             is_dev,
             file_path,
+            completed_lookup: false,
         }
     }
 }
 
 fn resolve_path<'a>(current_path: &'a str, target_path: &'a str) -> String {
-    let current_path = Path::new(current_path);
-    let mut new_path = current_path.to_path_buf();
-    for component in target_path.split('/') {
+    let mut resolved_path = PathBuf::from(current_path.replace('\\', "/"));
+    for component in target_path.replace('\\', "/").split('/') {
         if component == "." {
-            new_path = new_path.parent().unwrap().to_path_buf();
+            resolved_path.pop();
         } else if component == ".." {
-            new_path = new_path.parent().unwrap().parent().unwrap().to_path_buf();
+            resolved_path.pop();
+            resolved_path.pop();
         } else {
-            new_path = new_path.join(component);
+            resolved_path.push(component);
         }
     }
-    new_path.to_str().unwrap().to_string()
+    resolved_path.display().to_string()
 }
 
 impl VisitMut for ReplaceLazyVisitor {
@@ -129,7 +123,6 @@ impl VisitMut for ReplaceLazyVisitor {
     fn visit_mut_module(&mut self, n: &mut Module) {
         for item in n.body.iter() {
             if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = &item {
-                info!("\n\n\n ModuleDecl: {:#?} \n\n\n", self.module_statements);
                 if import.specifiers.len() == 1 {
                     for specifier in import.specifiers.clone().iter_mut() {
                         if let ImportSpecifier::Default(default) = specifier {
@@ -144,25 +137,18 @@ impl VisitMut for ReplaceLazyVisitor {
             }
         }
         n.visit_mut_children_with(self);
-        info!("\n\n\n SELF: {:#?} \n\n\n", self);
-        // for (index, statement) in n.body.iter_mut().enumerate() {
-        //     if index > self.module_statements.len() {
-        //         statement.visit_mut_children_with(self);
-        //     }
-        // }
-        let last_import_index = self.module_statements.len();
+        self.completed_lookup = true;
+        let mut insert_index = self.module_statements.len();
         for (index, statement) in self.module_statements.iter_mut().enumerate() {
             if let Some(constant_name) = &statement {
                 if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = n.body[index].clone() {
                     let resolved_path = resolve_path(&self.file_path, &import.src.value);
                     let file_hash = hash(&resolved_path, self.is_dev);
-                    info!("\n\n\n import_path: {} {} \n\n\n", resolved_path, file_hash);
-                    if let Some(span) = self.span {
-                        n.body.insert(
-                            last_import_index + index,
-                            lazy_import(constant_name, &file_hash.into(), &import.src.value, span),
-                        )
-                    }
+                    n.body.insert(
+                        insert_index,
+                        lazy_import(constant_name, &file_hash.into(), &import.src.value),
+                    );
+                    insert_index += 1;
                 }
             }
         }
@@ -173,16 +159,19 @@ impl VisitMut for ReplaceLazyVisitor {
             index += 1;
             should_retain
         });
+        n.visit_mut_children_with(self);
     }
 
     fn visit_mut_import_decl(&mut self, _n: &mut ImportDecl) {}
-    fn visit_mut_jsx_closing_element(&mut self, _n: &mut JSXClosingElement) {}
+    fn visit_mut_jsx_closing_element(&mut self, n: &mut JSXClosingElement) {
+        if self.completed_lookup {
+            n.visit_mut_children_with(self);
+        }
+    }
 
     fn visit_mut_jsx_opening_element(&mut self, n: &mut JSXOpeningElement) {
-        if let JSXElementName::Ident(ident) = &n.name {
-            if self.span.is_none() {
-                self.span = Some(ident.span);
-            }
+        if self.completed_lookup {
+            n.visit_mut_children_with(self);
         }
     }
 
@@ -190,8 +179,12 @@ impl VisitMut for ReplaceLazyVisitor {
         for statement in self.module_statements.iter_mut() {
             if let Some(sym) = &statement {
                 if n.sym == *sym {
-                    *statement = None;
-                    return;
+                    if self.completed_lookup {
+                        n.span = DUMMY_SP;
+                    } else {
+                        *statement = None;
+                        return;
+                    }
                 }
             }
         }

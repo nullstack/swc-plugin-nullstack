@@ -123,16 +123,4 @@ impl VisitMut for InjectRestartVisitor {
             });
         }
     }
-
-    fn visit_mut_member_expr(&mut self, n: &mut MemberExpr) {
-        if let Some(ident) = n.obj.clone().ident() {
-            if ident.sym.eq("Nullstack") {
-                if let MemberProp::Ident(prop) = &n.prop {
-                    if prop.sym.eq("start") {
-                        panic!("{:#?}", n);
-                    }
-                }
-            }
-        }
-    }
 }
