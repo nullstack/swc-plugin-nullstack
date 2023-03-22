@@ -105,7 +105,6 @@ impl ReplaceLazyVisitor {
 fn resolve_path<'a>(current_path: &'a str, target_path: &'a str) -> String {
     let mut resolved_path = PathBuf::from(current_path.replace('\\', "/"));
     for component in target_path.replace('\\', "/").split('/') {
-        println!("{}", component);
         if component == "." {
             resolved_path.pop();
         } else if component == ".." {
