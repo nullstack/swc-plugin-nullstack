@@ -126,7 +126,18 @@ impl VisitMut for ReplaceLazyVisitor {
                 if import.specifiers.len() == 1 {
                     for specifier in import.specifiers.clone().iter_mut() {
                         if let ImportSpecifier::Default(default) = specifier {
-                            self.module_statements.push(Some(default.local.sym.clone()));
+                            // check if first character of sym is uppercase
+                            if let Some(char) = default.local.sym.to_string().chars().next() {
+                                if char.is_uppercase() {
+                                    self.module_statements.push(Some(default.local.sym.clone()));
+                                } else {
+                                    self.module_statements.push(None);
+                                }
+                            } else {
+                                self.module_statements.push(None);
+                            }
+                        } else {
+                            self.module_statements.push(None);
                         }
                     }
                 } else {
@@ -172,6 +183,10 @@ impl VisitMut for ReplaceLazyVisitor {
     fn visit_mut_jsx_opening_element(&mut self, n: &mut JSXOpeningElement) {
         if self.completed_lookup {
             n.visit_mut_children_with(self);
+        } else {
+            for attr in n.attrs.iter_mut() {
+                attr.visit_mut_with(self);
+            }
         }
     }
 
