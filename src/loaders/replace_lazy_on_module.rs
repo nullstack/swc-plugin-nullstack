@@ -184,8 +184,19 @@ impl VisitMut for ReplaceLazyVisitor {
         if self.completed_lookup {
             n.visit_mut_children_with(self);
         } else {
+            let mut is_route = false;
             for attr in n.attrs.iter_mut() {
-                attr.visit_mut_with(self);
+                attr.visit_mut_children_with(self);
+                if let JSXAttrOrSpread::JSXAttr(jsxattr) = &attr {
+                    if let JSXAttrName::Ident(ident) = &jsxattr.name {
+                        if ident.sym.eq("route") {
+                            is_route = true
+                        }
+                    }
+                }
+            }
+            if !is_route {
+                n.name.visit_mut_children_with(self);
             }
         }
     }
