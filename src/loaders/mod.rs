@@ -12,18 +12,24 @@ pub mod replace_ref_on_attributes;
 pub mod replace_server_functions_on_client;
 
 pub fn hash(text: &str, is_dev: bool) -> String {
-    if is_dev {
-        let separator = "__";
-        let replaced = text.replace('/', separator).replace('\\', separator);
-        let fragments: Vec<&str> = replaced.split('.').collect();
-        if let Some(file_name) = fragments.first() {
-            return file_name.to_string();
-        }
-        "".to_string()
-    } else {
-        let checksum = crc32fast::hash(text.as_bytes());
-        format!("{:x}", checksum)
+    let mut replaced = text.replace('\\', "/");
+    if replaced.ends_with("/index.njs")
+        || text.ends_with("/index.jsx")
+        || text.ends_with("/index.nts")
+        || text.ends_with("/index.tsx")
+    {
+        replaced.drain(replaced.len() - 10..);
     }
+    let fragments: Vec<&str> = replaced.split('.').collect();
+    if let Some(file_name) = fragments.first() {
+        if is_dev {
+            return file_name.replace('/', "__");
+        } else {
+            let checksum = crc32fast::hash(file_name.as_bytes());
+            return format!("{:x}", checksum);
+        }
+    }
+    "".to_string()
 }
 
 pub fn combine_hash(file_hash: &str, class_hash: &str, is_dev: bool) -> String {
