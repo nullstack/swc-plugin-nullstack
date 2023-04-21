@@ -52,11 +52,11 @@ pub fn process_transform(
         program.visit_mut_with(&mut InjectRuntimeVisitor::default());
         if config.development {
             program.visit_mut_with(&mut InjectAcceptVisitor::new(file_path.clone()));
-            // for now its never used in prod
-            program.visit_mut_with(&mut ReplaceLazyVisitor::new(
-                file_path.clone(),
-                config.development,
-            ));
+            // disabled for this version
+            // program.visit_mut_with(&mut ReplaceLazyVisitor::new(
+            //     file_path.clone(),
+            //     config.development,
+            // ));
         }
         program.visit_mut_with(&mut ReplaceRefVisitor::default());
         program.visit_mut_with(&mut InjectSourceVisitor::default());
