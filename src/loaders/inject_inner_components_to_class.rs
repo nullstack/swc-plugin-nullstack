@@ -1,4 +1,4 @@
-use std::borrow::BorrowMut;
+use std::{borrow::BorrowMut, collections::HashMap};
 use swc_common::Span;
 use swc_core::ecma::{
     ast::*,
@@ -10,11 +10,10 @@ use swc_core::ecma::{
 pub struct InjectInnerComponentVisitor {
     outter_idents: Vec<JsWord>,
     inner_idents: Vec<JsWord>,
-    inner_tags: Vec<JsWord>,
+    inner_tags: HashMap<JsWord, Span>,
     is_inside_class: bool,
     is_inside_method: bool,
     is_inside_tag: bool,
-    current_span: Option<Span>,
 }
 
 fn inject_constant(constant_name: &JsWord, span: &Span) -> Stmt {
@@ -56,6 +55,16 @@ fn push_if_uppercase(vec: &mut Vec<JsWord>, sym: &JsWord) {
 impl VisitMut for InjectInnerComponentVisitor {
     noop_visit_mut_type!();
 
+    fn visit_mut_module(&mut self, n: &mut Module) {
+        n.body.retain(|item| {
+            if let ModuleItem::Stmt(Stmt::Decl(Decl::Fn(decl))) = item {
+                return !decl.declare
+            }
+            true
+        });
+        n.visit_mut_children_with(self);
+    }
+
     fn visit_mut_module_item(&mut self, n: &mut ModuleItem) {
         match n {
             ModuleItem::ModuleDecl(decl) => match decl {
@@ -85,7 +94,11 @@ impl VisitMut for InjectInnerComponentVisitor {
                             }
                         }
                     }
-                    Decl::Fn(f) => push_if_uppercase(&mut self.outter_idents, &f.ident.sym),
+                    Decl::Fn(f) => {
+                        if !f.declare {
+                            push_if_uppercase(&mut self.outter_idents, &f.ident.sym)
+                        } 
+                    }
                     other => other.visit_mut_children_with(self),
                 },
                 other => other.visit_mut_children_with(self),
@@ -96,13 +109,10 @@ impl VisitMut for InjectInnerComponentVisitor {
     fn visit_mut_ident(&mut self, n: &mut Ident) {
         if !self.is_inside_class {
             push_if_uppercase(&mut self.outter_idents, &n.sym);
-        } else if self.is_inside_tag {
-            if !self.outter_idents.iter().any(|s| *s == n.sym)
+        } else if self.is_inside_tag && !self.outter_idents.iter().any(|s| *s == n.sym)
                 && !self.inner_idents.iter().any(|s| *s == n.sym)
-            {
-                push_if_uppercase(&mut self.inner_tags, &n.sym);
-                self.current_span = Some(n.span);
-            }
+                && n.sym.chars().next().unwrap_or_default().is_uppercase() {
+                    self.inner_tags.insert(n.sym.clone(), n.span);
         } else if self.is_inside_method {
             push_if_uppercase(&mut self.inner_idents, &n.sym);
         }
@@ -130,11 +140,9 @@ impl VisitMut for InjectInnerComponentVisitor {
                 self.is_inside_method = true;
                 n.function.visit_mut_children_with(self);
                 self.is_inside_method = false;
-                for inner_tag in self.inner_tags.iter() {
+                for (inner_tag, inner_span) in self.inner_tags.iter() {
                     if let Some(body) = n.function.body.borrow_mut() {
-                        if let Some(span) = self.current_span {
-                            body.stmts.insert(0, inject_constant(inner_tag, &span));
-                        }
+                        body.stmts.insert(0, inject_constant(inner_tag, inner_span));
                     }
                 }
                 self.inner_idents.clear();

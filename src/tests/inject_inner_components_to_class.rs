@@ -529,9 +529,31 @@ test!(
 test!(
     syntax(),
     |_| tr(InjectInnerComponentVisitor::default()),
-    inject_inner_components_when_nested_top_level_conflict,
+    inject_inner_components_when_declare_conflict,
     r#"
-        const object = {InnerComponent: true}
+        declare function Link(context: HomeLinkProps): NullstackNode
+        class Component {
+            render() {
+                return <><Link /></>
+            }
+        }
+    "#,
+    r#"
+        class Component {
+            render() {
+                const Link = this.renderLink
+                return <><Link /></>
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    skip_inject_inner_components_when_define_top_function,
+    r#"
+        function InnerComponent() {}
         class Component {
             render() {
                 return <><InnerComponent /></>
@@ -539,10 +561,31 @@ test!(
         }
     "#,
     r#"
-        const object = {InnerComponent: true}
+        function InnerComponent() {}
         class Component {
             render() {
-                const InnerComponent = this.renderInnerComponent
+                return <><InnerComponent /></>
+            }
+        }
+    "#
+);
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    skip_inject_inner_components_when_define_top_function_constant,
+    r#"
+        const InnerComponent = () => {}
+        class Component {
+            render() {
+                return <><InnerComponent /></>
+            }
+        }
+    "#,
+    r#"
+        const InnerComponent = () => {}
+        class Component {
+            render() {
                 return <><InnerComponent /></>
             }
         }

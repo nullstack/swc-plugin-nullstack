@@ -6,7 +6,8 @@ use loaders::{
     inject_source_to_events::InjectSourceVisitor,
     register_server_functions_on_server::RegisterServerFunctionVisitor,
     remove_styles_on_server::RemoveStylesVisitor, remove_unused_from_client::RemoveUnusedVisitor,
-    replace_lazy_on_module::ReplaceLazyVisitor, replace_ref_on_attributes::ReplaceRefVisitor,
+    // replace_lazy_on_module::ReplaceLazyVisitor, 
+    replace_ref_on_attributes::ReplaceRefVisitor,
     replace_server_functions_on_client::ReplaceServerFunctionVisitor,
 };
 use swc_common::plugin::metadata::TransformPluginMetadataContextKind;

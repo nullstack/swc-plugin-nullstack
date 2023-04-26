@@ -16,13 +16,13 @@ use swc_core::ecma::{
     transforms::base::resolver,
     visit::{as_folder, Fold, VisitMut},
 };
-use swc_ecma_parser::{EsConfig, Syntax};
+use swc_ecma_parser::{Syntax, TsConfig};
 
 #[allow(dead_code)]
 pub fn syntax() -> Syntax {
-    Syntax::Es(EsConfig {
-        jsx: true,
-        ..EsConfig::default()
+    Syntax::Typescript(TsConfig {
+        tsx: true,
+        ..TsConfig::default()
     })
 }
 

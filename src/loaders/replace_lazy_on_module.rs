@@ -91,16 +91,16 @@ pub struct ReplaceLazyVisitor {
     completed_lookup: bool,
 }
 
-impl ReplaceLazyVisitor {
-    pub fn new(file_path: String, is_dev: bool) -> Self {
-        ReplaceLazyVisitor {
-            module_statements: vec![],
-            is_dev,
-            file_path,
-            completed_lookup: false,
-        }
-    }
-}
+// impl ReplaceLazyVisitor {
+//     pub fn new(file_path: String, is_dev: bool) -> Self {
+//         ReplaceLazyVisitor {
+//             module_statements: vec![],
+//             is_dev,
+//             file_path,
+//             completed_lookup: false,
+//         }
+//     }
+// }
 
 fn resolve_path<'a>(current_path: &'a str, target_path: &'a str) -> String {
     let mut resolved_path = PathBuf::from(current_path.replace('\\', "/"));
