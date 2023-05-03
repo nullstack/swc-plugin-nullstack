@@ -37,7 +37,7 @@ test!(
 test!(
     Default::default(),
     |_| tr(RegisterServerFunctionVisitor::default()),
-    skip_register_server_functions_with_multiple_classes,
+    register_classes_without_server_functions_with_multiple_classes,
     r#"
         class Component { static async server() { console.log("server") } };
         class Component2 { };
@@ -47,6 +47,7 @@ test!(
         class Component2 { };
         $runtime.register(Component, "server");
         $runtime.register(Component);
+        $runtime.register(Component2);
     "#
 );
 
@@ -93,3 +94,15 @@ test!(
         $runtime.register(Component);
     "#
 );
+
+test!(
+    Default::default(),
+    |_| tr(RegisterServerFunctionVisitor::default()),
+    register_server_functions_when_no_server_function,
+    r#"export default class Component extends Parent {};"#,
+    r#"
+        export default class Component extends Parent {};
+        $runtime.register(Component);
+    "#
+);
+

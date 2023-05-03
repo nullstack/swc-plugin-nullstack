@@ -68,22 +68,16 @@ impl VisitMut for RegisterServerFunctionVisitor {
 
     fn visit_mut_class_decl(&mut self, n: &mut ClassDecl) {
         self.current_class = Some(n.ident.clone());
-        let number_of_server_functions = self.registry.len();
         n.visit_mut_children_with(self);
-        if self.registry.len() > number_of_server_functions {
-            self.registry.push(runtime_register_class(&n.ident));
-        }
+        self.registry.push(runtime_register_class(&n.ident));
         self.current_class = None;
     }
 
     fn visit_mut_class_expr(&mut self, n: &mut ClassExpr) {
         if let Some(ident) = &mut n.ident.clone() {
             self.current_class = Some(ident.clone());
-            let number_of_server_functions = self.registry.len();
             n.visit_mut_children_with(self);
-            if self.registry.len() > number_of_server_functions {
-                self.registry.push(runtime_register_class(ident));
-            }
+            self.registry.push(runtime_register_class(ident));
             self.current_class = None;
         }
     }
