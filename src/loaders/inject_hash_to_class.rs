@@ -55,4 +55,10 @@ impl VisitMut for InjectHashVisitor {
         let combined_hash = combine_hash(&self.file_hash, &class_hash, self.is_dev);
         n.class.body.insert(0, self.hash_prop(combined_hash.into()));
     }
+
+    fn visit_mut_class_expr(&mut self, n: &mut ClassExpr) {
+        let class_hash = hash(&n.ident.as_mut().unwrap().sym, self.is_dev);
+        let combined_hash = combine_hash(&self.file_hash, &class_hash, self.is_dev);
+        n.class.body.insert(0, self.hash_prop(combined_hash.into()));
+    }
 }
