@@ -591,3 +591,50 @@ test!(
         }
     "#
 );
+
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    inject_inner_components_by_param,
+    r#"
+        class ExternalComponent {
+            render({test}) {
+                return <div>{test}</div>;
+            }
+        }
+        class Component {
+            renderInnerComponent() {
+                return <span />;
+            }
+            renderAnotherInnerComponent() {
+                return <InnerComponent />;
+            }
+
+            render() {
+                return <ExternalComponent tt="here" test={<AnotherInnerComponent />} />;
+            }
+        }
+    "#,
+    r#"
+        class ExternalComponent {
+            render({test}) {
+                return <div>{test}</div>;
+            }
+        }
+        class Component {
+            renderInnerComponent() {
+                return <span />;
+            }
+            renderAnotherInnerComponent() {
+                const InnerComponent = this.renderInnerComponent;
+                return <InnerComponent />;
+            }
+
+            render() {
+                const AnotherInnerComponent = this.renderAnotherInnerComponent;
+                return <ExternalComponent tt="here" test={<AnotherInnerComponent/>} />;
+            }
+        }
+    "#
+);

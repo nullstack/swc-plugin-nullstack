@@ -109,7 +109,8 @@ impl VisitMut for InjectInnerComponentVisitor {
     fn visit_mut_ident(&mut self, n: &mut Ident) {
         if !self.is_inside_class {
             push_if_uppercase(&mut self.outter_idents, &n.sym);
-        } else if self.is_inside_tag && !self.outter_idents.iter().any(|s| *s == n.sym)
+        } else if self.is_inside_tag 
+                && !self.outter_idents.iter().any(|s| *s == n.sym)
                 && !self.inner_idents.iter().any(|s| *s == n.sym)
                 && n.sym.chars().next().unwrap_or_default().is_uppercase() {
                     self.inner_tags.insert(n.sym.clone(), n.span);
@@ -156,6 +157,26 @@ impl VisitMut for InjectInnerComponentVisitor {
     }
 
     fn visit_mut_jsx_opening_element(&mut self, n: &mut JSXOpeningElement) {
+        for attr in &mut n.attrs {
+            if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                if let Some(value) = &jsx_attr.value {
+                    match value {
+                        JSXAttrValue::JSXExprContainer(container) => {
+                            let mut new_expr = container.expr.clone();
+                            self.is_inside_tag = true;
+                            new_expr.visit_mut_with(self);
+                            self.is_inside_tag = false;
+                        }
+                        JSXAttrValue::Lit(_lit) => {
+                        }
+                        JSXAttrValue::JSXElement(_el) => {
+                        }
+                        JSXAttrValue::JSXFragment(_frag) => {
+                        }
+                    }
+                }
+            }
+        }
         if self.is_inside_method {
             self.is_inside_tag = true;
             n.name.visit_mut_children_with(self);
