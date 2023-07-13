@@ -591,3 +591,28 @@ test!(
         }
     "#
 );
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    inject_inner_components_when_passed_as_props,
+    r#"
+        const OtherComponent = () => {}
+        class Component {
+            renderInnerComponent() { return false }
+            render() {
+                return <OtherComponent prop={<InnerComponent />} />
+            }
+        }
+    "#,
+    r#"
+        const OtherComponent = () => {}
+        class Component {
+            renderInnerComponent() { return false }
+            render() {
+                const InnerComponent = this.renderInnerComponent
+                return <OtherComponent prop={<InnerComponent />} />
+            }
+        }
+    "#
+);

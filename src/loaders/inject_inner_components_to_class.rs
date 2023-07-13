@@ -160,6 +160,7 @@ impl VisitMut for InjectInnerComponentVisitor {
             self.is_inside_tag = true;
             n.name.visit_mut_children_with(self);
             self.is_inside_tag = false;
+            n.visit_mut_children_with(self);
         }
     }
 
