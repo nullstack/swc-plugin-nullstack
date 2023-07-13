@@ -616,3 +616,25 @@ test!(
         }
     "#
 );
+
+test!(
+    syntax(),
+    |_| tr(InjectInnerComponentVisitor::default()),
+    skip_inject_inner_components_when_passed_as_props_that_should_be_regular_constant,
+    r#"
+        const OtherComponent = () => {}
+        class Component {
+            render() {
+                return <OtherComponent prop={String("na" + "de" + "ga")} />
+            }
+        }
+    "#,
+    r#"
+        const OtherComponent = () => {}
+        class Component {
+            render() {
+                return <OtherComponent prop={String("na" + "de" + "ga")} />
+            }
+        }
+    "#
+);
