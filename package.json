@@ -1,6 +1,6 @@
 {
     "name": "swc-plugin-nullstack",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "description": "SWC plugin for Nullstack",
     "main": "./dist/swc-plugin-nullstack.wasm",
     "author": "Mortaro",
